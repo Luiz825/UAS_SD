@@ -1,0 +1,8 @@
+
+path: /home/luiz/UAS_SD/
+train: images/train
+val: images/val
+
+#classes
+names:
+  0: bulls eye
