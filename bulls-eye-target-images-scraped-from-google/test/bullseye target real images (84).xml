@@ -1,0 +1,26 @@
+<annotation>
+	<folder>Raw Data</folder>
+	<filename>bullseye target real images (84).jpg</filename>
+	<path>C:\Users\ashwi\Desktop\AEROTHON\Raw Data\bullseye target real images (84).png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>150</width>
+		<height>195</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>bulls eye</name>
+		<pose>Unspecified</pose>
+		<truncated>1</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>1</xmin>
+			<ymin>25</ymin>
+			<xmax>150</xmax>
+			<ymax>180</ymax>
+		</bndbox>
+	</object>
+</annotation>

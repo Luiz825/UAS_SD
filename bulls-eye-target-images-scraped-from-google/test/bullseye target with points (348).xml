@@ -1,0 +1,26 @@
+<annotation>
+	<folder>Raw Data</folder>
+	<filename>bullseye target with points (348).jpg</filename>
+	<path>C:\Users\ashwi\Desktop\AEROTHON\Raw Data\bullseye target with points (348).png</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>268</width>
+		<height>188</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>bulls eye</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>174</xmin>
+			<ymin>117</ymin>
+			<xmax>246</xmax>
+			<ymax>187</ymax>
+		</bndbox>
+	</object>
+</annotation>
