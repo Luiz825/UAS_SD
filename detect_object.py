@@ -1,19 +1,23 @@
 import cv2
 from ultralytics import YOLO
 import math
+from picamera2 import Picamera2
 
 model = YOLO("/home/dronelyraven/2024_SD/UAS_SD/runs /detect/train6/weights/best.pt")
 
 classname = ["bulls eye"]
 
-cam = cv2.VideoCapture(0)
+picam2 = Picamera2()
+picam2.configure(picam2.create_preview_configuration())
+picam2.start()
+
 
 #cam.set(3,320)
 #cam.set(4,320)
 
 while True:
-    ret, frame = cam.read()
-
+    frame = picam2.capture_array()
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     frame_resized = cv2.resize(frame, (320,320))
     results = model(frame_resized, imgsz=320,stream=True)
 
@@ -50,5 +54,5 @@ while True:
     if cv2.waitKey(1) == ord('q'):
         break
 
-cam.release()
+picam2.stop()
 cv2.destroyAllWindows()
