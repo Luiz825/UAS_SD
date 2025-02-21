@@ -1,14 +1,36 @@
 from pymavlink import mavutil
 import learning as ln
+import listen as ls
 
-def madagascar()
-
-def king_julian(x, y, z):
-    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, -3, -4, -5, 0, 0, 0, -45, 0))
-
-def wait_4_pos():
-    msg = ln.the_connection.recv_match(type = "GLOBAL_POSITION_INT", blocking = True)        
-    return msg
-
-def wait_drama(target):
+def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, xa = None, ya = None, za = None, yaw = 0):
+    if (x | y | z):
+        king_julian(x, y, z, yaw)
+        hold_(x, y, z)
+    elif (xv | yv | zv):
+        zumba(xv, yv, zv, yaw)
+    elif (xa | ya | za):
+        hit_the_gas(xa, ya, za, yaw)
     
+
+def king_julian(x, y, z, yaw):
+    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, x, y, z, 0, 0, 0, 0, 0, 0, yaw, 0))
+
+def zumba(xv, yv, zv, yaw):
+    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, xv, yv, zv, 0, 0, 0, yaw, 0))
+
+def hit_the_gas(xa, ya, za, yaw):
+    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, 0, 0, 0, xa, ya, za, yaw, 0))
+
+def hold_(x, y, z):    
+    cheese = False
+    while not cheese:
+        msg = ls.wait_4_msg("LOCAL_POSITION_NED")
+        if (x == msg.x and y == msg.y and z == msg.z):
+            cheese = True
+
+def hold_v(xv, yv, zv):    
+    cheese = False
+    while not cheese:
+        msg = ls.wait_4_msg("LOCAL_POSITION_NED")
+        if (xv == msg.xv and yv == msg.yv and zv == msg.zv):
+            cheese = True

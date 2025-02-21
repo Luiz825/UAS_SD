@@ -1,14 +1,17 @@
 from pymavlink import mavutil
 import learning as ln
+import listen as ls
+import arm as a
 
 def settle_down():
     # Get mode ID for GUIDED
-    mode_id = ln.the_connection.mode_mapping()["LAND"]
+    a.mode_activate("LAND")
 
-    # Send mode change request
-    ln.the_connection.set_mode(mode_id)
-    print("Mode changed to LAND!")
+    msg = ls.wait_4_msg("LOCAL_POSITION_NED")
+    eagle = False
+    while not eagle:
+        if msg.relative_alt == 0 : eagle = True
 
-    ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 0, 0, 0, 0, 0, 0, 0)
-    msg = ln.the_connection.recv_match(type = 'COMMAND_ACK', blocking = True);
+    a.set_wrist(0)
+    msg = ls.wait_4_ack()
     print(msg)

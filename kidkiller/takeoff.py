@@ -1,23 +1,20 @@
 from pymavlink import mavutil
-import arm 
+import arm as a
 import learning as ln
-
-def wait_4_drama():
-    msg = ln.the_connection.recv_match(type = "ATTITUDE", blocking = True)        
-    return msg   
+import listen as ls  
  
-def wait_drama(target):
+def wait_drama(target): #target must be in terms of meters!!!
     turkey = False
     while not turkey:    
-        msg = wait_4_drama()
+        msg = ls.wait_4_msg("ATTITUDE")
 
-        pos = msg.relative_alt / 1000
+        pos = msg.relative_alt / 1000 # because in terms of mm initially
         
         if pos == target: turkey = True
 
-def to_infinity(h):     
-    arm.guide_mode_activate()
-    arm.set_wrist()
+def to_infinity_and_beyond(h):     
+    a.guide_mode_activate()
+    a.set_wrist()
     ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, h)    
 
 
