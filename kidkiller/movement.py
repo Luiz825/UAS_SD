@@ -3,12 +3,12 @@ import learning as ln
 import listen as ls
 
 def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, xa = None, ya = None, za = None, yaw = 0):
-    if (x | y | z):
+    if (x or y or z):
         king_julian(x, y, z, yaw)
         hold_(x, y, z)
-    elif (xv | yv | zv):
+    elif (xv or yv or zv):
         zumba(xv, yv, zv, yaw)
-    elif (xa | ya | za):
+    elif (xa or ya or za):
         hit_the_gas(xa, ya, za, yaw)
     
 
