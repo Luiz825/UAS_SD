@@ -8,8 +8,12 @@ import learning as ln
 def ba_dum():    
     ln.the_connection.wait_heartbeat()
     print("Heartbeat from system (system %u component %u)" % (ln.the_connection.target_system, ln.the_connection.target_component))
+    
 
-    # Once connected, use 'the_connection' to get and send messages
-    msg = ln.the_connection.recv_match(type = 'ATTITUDE', blocking = True);
+def wait_4_msg():
+    msg = ln.the_connection.recv_match(type = "HEARTBEAT", blocking = True)
+    return msg
 
+def wait_4_ack():
+    msg = ln.the_connection.recv_match(type = 'COMMAND_ACK', blocking = True);
     print(msg)

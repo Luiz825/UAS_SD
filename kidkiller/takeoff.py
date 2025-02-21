@@ -1,20 +1,24 @@
 from pymavlink import mavutil
+import arm 
 import learning as ln
 
-def to_infinity():
-    # Get mode ID for GUIDED
-    mode_id = ln.the_connection.mode_mapping()["GUIDED"]
+def wait_4_drama():
+    msg = ln.the_connection.recv_match(type = "ATTITUDE", blocking = True)        
+    return msg   
+ 
+def wait_drama(target):
+    turkey = False
+    while not turkey:    
+        msg = wait_4_drama()
 
-    # Send mode change request
-    ln.the_connection.set_mode(mode_id)
-    print("Mode changed to GUIDED!")
+        pos = msg.relative_alt / 1000
+        
+        if pos == target: turkey = True
 
-    ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0)
-    msg = ln.the_connection.recv_match(type = 'COMMAND_ACK', blocking = True);
-    print(msg)
+def to_infinity(h):     
+    arm.guide_mode_activate()
+    arm.set_wrist()
+    ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, h)    
 
-    ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 10)
-    msg = ln.the_connection.recv_match(type = 'COMMAND_ACK', blocking = True);
-    print(msg)
 
 
