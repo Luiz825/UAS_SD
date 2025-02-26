@@ -4,7 +4,7 @@ import listen as ls
 from typing import Literal
 
 
-def mode_activate(mode_e: Literal["GUIDED", "LAND", "STABALIZE"]):
+def mode_activate(mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL"]):
     # Get mode ID for GUIDED
     mode_id = ln.the_connection.mode_mapping()[mode_e]
     # Send mode change request

@@ -1,5 +1,5 @@
-from pymavlink import mavutil
 import time
+from typing import Literal
 import learning as ln
 
 # Wait for the first heartbeat
@@ -7,7 +7,7 @@ import learning as ln
 def ba_dum():    
     return wait_4_msg("HEARTBEAT")    
 
-def wait_4_msg(str_type, time_out_sess = None, attempts = 4):    #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
+def wait_4_msg(str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "HOME_POSITION"], time_out_sess = None, attempts = 4):    #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
     if time_out_sess is None:
         msg = ln.the_connection.recv_match(type = str_type, blocking = True)
         return msg
@@ -20,4 +20,4 @@ def wait_4_msg(str_type, time_out_sess = None, attempts = 4):    #time_out_sess 
                 return msg
 
 def wait_4_ack():    
-    return ln.the_connection.recv_match(type = 'COMMAND_ACK', blocking = True);
+    return wait_4_msg("COMMAND_ACK", time_out_sess = 120)

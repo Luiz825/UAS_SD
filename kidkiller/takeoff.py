@@ -8,8 +8,9 @@ import listen as ls
 def __wait_drama(target): #target must be in terms of meters!!!    
     while True:    
         msg = ls.wait_4_msg("LOCAL_POSITION_NED")
-        pos = msg.z # because in terms of mm initially based on docs        
-        if pos == target: break
+        pos = abs(msg.z)   
+        print(f"Current Altitude: {pos:.2f}m, Target: {target}m")   
+        if abs(target - pos) < 0.1 : break # tolerance of 100 mm ?
 
 def to_infinity_and_beyond(h, yaw = 0):     
     a.mode_activate("GUIDED")
