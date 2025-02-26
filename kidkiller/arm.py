@@ -1,10 +1,10 @@
 from pymavlink import mavutil
 import learning as ln
 import listen as ls
+from typing import Literal
 
-# Wait for the first heartbeat
-#   This sets the system and component ID of remote system for the link
-def mode_activate(mode_e):
+
+def mode_activate(mode_e: Literal["GUIDED", "LAND", "STABALIZE"]):
     # Get mode ID for GUIDED
     mode_id = ln.the_connection.mode_mapping()[mode_e]
     # Send mode change request
