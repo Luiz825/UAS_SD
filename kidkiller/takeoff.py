@@ -18,6 +18,8 @@ def to_infinity_and_beyond(h, yaw = 0):
     ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, yaw, 0, 0, h)    
     print(ls.wait_4_ack())
     __wait_drama(h)
+    a.mode_activate("LOITER")
+    a.manual_sett()
 
 
 

@@ -1,8 +1,12 @@
 from pymavlink import mavutil
+import arm as a
 import learning as ln
 import listen as ls
 
-def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, xa = None, ya = None, za = None, yaw = 0):
+def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, xa = None, ya = None, za = None, yaw = None):
+    a.mode_activate("GUIDED")
+    if yaw is None:
+        yaw = (ls.wait_4_msg("ATTITTUDE")).yaw
     if (x or y or z):
         __king_julian(x, y, z, yaw)
         hold_until(x, y, z)
@@ -11,6 +15,7 @@ def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, xa
         hold_until_v(xv, yv, zv)
     elif (xa or ya or za):
         __hit_the_gas(xa, ya, za, yaw)
+    a.mode_activate("LOITER")
     
 def __king_julian(x, y, z, yaw):
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, x, y, z, 0, 0, 0, 0, 0, 0, yaw, 0))
@@ -21,7 +26,8 @@ def __zumba(xv, yv, zv, yaw):
 def __hit_the_gas(xa, ya, za, yaw):
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, 0, 0, 0, xa, ya, za, yaw, 0))
 
-def hold_until(t_x, t_y, t_z):        
+def hold_until(t_x, t_y, t_z): 
+    #madagascar(xv = 0, yv = 0, zv = 0)       
     while True:        
         msg = ls.wait_4_msg("GLOBAL_POSITION_INT")
         x = msg.lat
@@ -29,7 +35,7 @@ def hold_until(t_x, t_y, t_z):
         z = msg.alt
         print(f"Current Position: Lat {x/1e7}, Lon {y/1e7}, Alt {z/1000}m")
         print(f"Target Position: Lat {t_x/1e7}, Lon {t_y/1e7}, Alt {t_z/1000}m")
-        if(abs(t_x - x) < 0.1 and abs(t_y - y) < 0.1 and abs(t_z - z) < 0.1):
+        if(abs(t_x - x) < 0.5 and abs(t_y - y) < 0.5 and abs(t_z - z) < 0.5):
             break
 
 def hold_until_v(xv, yv, zv):        
