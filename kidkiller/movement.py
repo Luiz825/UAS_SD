@@ -3,7 +3,8 @@ import arm as a
 import learning as ln
 import listen as ls
 
-def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):
+def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):# in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
+    #this is complete
     a.mode_activate("GUIDED")
     # if all of these parameters can be organized in a list format
     # [j = getattr(str("pos.")+str(j) if j is None else j)]
@@ -40,6 +41,8 @@ def __zumba(xv, yv, zv, yaw):
 #     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, 0, 0, 0, xa, ya, za, yaw, 0))
 
 def hold_until(t_x = None, t_y = None, t_z = None, tol = 1):
+    #
+    #
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     t_x = pos.x if t_x is None else t_x
     t_y = pos.y if t_y is None else t_y
