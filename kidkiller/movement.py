@@ -3,7 +3,7 @@ import arm as a
 import learning as ln
 import listen as ls
 
-def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):# in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
+def vel_or_waypoint_mv(x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):# in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
     a.mode_activate("GUIDED")
     # if all of these parameters can be organized in a list format
@@ -11,15 +11,15 @@ def madagascar(x = None, y = None, z = None, xv = None, yv = None, zv = None, ya
     # i also don't really recall if you need to force cast thos strings
 
     if (x != None or y != None or z != None):
-        __king_julian(x, y, z, yaw)
+        waypoint_mv(x, y, z, yaw)
         hold_until(x, y, z)
     elif (xv != None or yv != None or zv != None):
-        __zumba(xv, yv, zv, yaw)
+        vel_mv(xv, yv, zv, yaw)
         hold_until_v(xv, yv, zv)
     # elif (xa != None or ya != None or za != None):
     #     __hit_the_gas(xa, ya, za, yaw)    
     
-def __king_julian(x, y, z, yaw):
+def waypoint_mv(x, y, z, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     x = pos.x if x is None else x
     y = pos.y if y is None else y
@@ -28,7 +28,7 @@ def __king_julian(x, y, z, yaw):
     
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
 
-def __zumba(xv, yv, zv, yaw):
+def vel_mv(xv, yv, zv, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     xv = pos.vx if xv is None else xv
     yv = pos.vy if yv is None else yv
@@ -47,8 +47,7 @@ def hold_until(t_x = None, t_y = None, t_z = None, tol = 1):
     t_x = pos.x if t_x is None else t_x
     t_y = pos.y if t_y is None else t_y
     t_z = pos.z if t_z is None else t_z          
-def hold_until(t_x, t_y, t_z, tol = 0.5):
-    #madagascar(xv = 0, yv = 0, zv = 0)       
+def hold_until(t_x, t_y, t_z, tol = 0.5):    
     while True:        
         msg = ls.wait_4_msg("LOCAL_POSITION_NED")
         x = msg.x
