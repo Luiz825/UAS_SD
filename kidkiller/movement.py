@@ -40,14 +40,15 @@ def vel_mv(xv, yv, zv, yaw):
 # def __hit_the_gas(xa, ya, za, yaw):
 #     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, 0, 0, 0, xa, ya, za, yaw, 0))
 
-def hold_until(t_x = None, t_y = None, t_z = None, tol = 1):
+
     #
     #
+             
+def hold_until(t_x = None, t_y = None, t_z = None, tol = 0.5):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     t_x = pos.x if t_x is None else t_x
     t_y = pos.y if t_y is None else t_y
-    t_z = pos.z if t_z is None else t_z          
-def hold_until(t_x, t_y, t_z, tol = 0.5):    
+    t_z = pos.z if t_z is None else t_z 
     while True:        
         msg = ls.wait_4_msg("LOCAL_POSITION_NED")
         x = msg.x
