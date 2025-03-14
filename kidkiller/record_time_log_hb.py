@@ -6,15 +6,15 @@ import csv
 from datetime import datetime
 import asyncio
 
-async def log_test(filename = "FILE_log", time_out_sec = 15, loop_time_min = 10):
+async def log_test(filename = "FILE_log.cvs", time_out_sec = 15, loop_time_min = 10):
     if not os.path.isfile(filename):
-        with open(filename, mode = "w", newLine = ", ") as file:
+        with open(filename, mode = "w", newline = "") as file:
             scribe = csv.writer(file)
-            scribe.writerow("Timestamp", "Timelapse", "Distance")
+            scribe.writerow(["Timestamp", "Timelapse", "Distance"])
     
     # will only allow a time of ten minutes of recording data
     
-    with open(filename, mode = "a", newLine = ", ") as file:
+    with open(filename, mode = "a", newline = "") as file:
         scribe = csv.writer(file)
         start_ = time.time()
         while ((time.time() - start_) / 60) < loop_time_min:
@@ -26,7 +26,7 @@ async def log_test(filename = "FILE_log", time_out_sec = 15, loop_time_min = 10)
             scribe.writerow([timestamp, tm, pos])
 
             file.flush()
-            asyncio.sleep(3)
+            await asyncio.sleep(3)
     
 
 
