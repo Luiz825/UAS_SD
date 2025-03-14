@@ -24,7 +24,7 @@ def waypoint_mv(x, y, z, yaw):
     x = pos.x if x is None else x
     y = pos.y if y is None else y
     z = pos.z if z is None else z    
-    yaw =  (ls.wait_4_msg("ATTITTUDE")).yaw if yaw is None else yaw
+    yaw =  (ls.wait_4_msg("ATTITUDE")).yaw if yaw is None else yaw
     
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
 
@@ -33,7 +33,7 @@ def vel_mv(xv, yv, zv, yaw):
     xv = pos.vx if xv is None else xv
     yv = pos.vy if yv is None else yv
     zv = pos.vx if zv is None else zv
-    yaw =  (ls.wait_4_msg("ATTITTUDE")).yaw if yaw is None else yaw
+    yaw =  (ls.wait_4_msg("ATTITUDE")).yaw if yaw is None else yaw
 
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, xv, yv, zv, 0, 0, 0, yaw, 0))
 
@@ -56,12 +56,7 @@ def hold_until(t_x, t_y, t_z, tol = 0.5):
         print(f"Current Position: x = {x:.2f}, y = {y:.2f}, z = {z:.2f}m")
         print(f"Target Position: x = {t_x:.2f}, y = {t_y:.2f}, z = {t_z:.2f}m")
         if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
-            print("Position set")
-        print(f"Current Position: x {x:.2f}, y {y:.2f}, z {z:.2f}m")
-        print(f"Target Position: x {t_x:.2f}, y {t_y:.2f}, z {t_z:.2f}m")
-        if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
-            print(ls.wait_4_ack())
-            break
+            print("Position set")       
 
 def hold_until_v(xv = None, yv = None, zv = None, tol = 0.1):    
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
@@ -80,8 +75,4 @@ def hold_until_v(xv = None, yv = None, zv = None, tol = 0.1):
             zv = zv - 1;            
         if ((abs(xv - vel_x) < tol) and (abs(yv - vel_y) < tol) and (abs(zv - vel_z) < tol)):
             print("Velocity set")
-            return    
-        print(f"Current Velocities: vx={vel_x:.2f}, vy={vel_y:.2f}, vz={vel_z:.2f}")
-        print(f"Target Velocities: vx={xv:.2f}, vy={yv:.2f}, vz={zv:.2f}")
-        if ((abs(xv - vel_x) < 0.1) and (abs(yv - vel_y) < 0.1) and (abs(zv - vel_z) < 0.1)):
-            break
+            return            

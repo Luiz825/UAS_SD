@@ -10,3 +10,6 @@ echo "/dev/ttyUSB0 found! Running python..."
 source # enviornment sett on the rapberry pi
 python3 # insert path here after pulling from GitHub on raspberry pi
 
+
+#folllow steps to set up on rp5 so that the script begins when 
+#rp on rebbot

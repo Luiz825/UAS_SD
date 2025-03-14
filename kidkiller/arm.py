@@ -13,8 +13,8 @@ def mode_activate(mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL", "LOIT
 
 def set_wrist(arm_disarm):
     ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, arm_disarm, 0, 0, 0, 0, 0, 0)
-    print(ls.wait_4_ack())    
+    print(ls.wait_4_msg(str_type="COMMAND_ACK"))    
 
 def manual_sett():
     ln.the_connection.mav.manual_control_send( ln.the_connection.target_system, 0, 0, 500,  0,  0)
-
+    print(ls.wait_4_msg(str_type="COMMAND_ACK")) 
