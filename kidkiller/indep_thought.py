@@ -16,8 +16,7 @@ async def main():
 # this is testing grounds for different paths and options
 #a.mode_activate('GUIDED')
 print(ls.wait_4_msg("HEARTBEAT"))
-a.mode_activate("GUIDED")
-a.set_wrist(1)
-to.to_infinity_and_beyond(h = 10, yaw = 0)
+to.to_infinity_and_beyond(h = 130)
+# back.ret_to_base(start = 1)
 asyncio.run(main())
 

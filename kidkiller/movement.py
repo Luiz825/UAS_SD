@@ -19,13 +19,13 @@ def vel_or_waypoint_mv(x = None, y = None, z = None, xv = None, yv = None, zv = 
     
 def waypoint_mv(x, y, z, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
-    x = 0 if x is None else x
-    y = 0 if y is None else y
+    x = pos.x if x is None else x
+    y = pos.y if y is None else y
     z = 0 if z is None else z    
     yaw =  (ls.wait_4_msg("ATTITUDE")).yaw if yaw is None else yaw
     
     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
-    hold_until(x, y, z)
+    hold_until(x, y, (z + pos.z))
 
 def vel_mv(xv, yv, zv, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
@@ -55,7 +55,7 @@ def hold_until(t_x = None, t_y = None, t_z = None, tol = 0.5):
         print(f"Target Position: x = {t_x:.2f}, y = {t_y:.2f}, z = {t_z:.2f}m")
         if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
             print("Position set")  
-            break     
+            return 1     
 
 def hold_until_v(xv = None, yv = None, zv = None, tol = 0.1):    
     print("Begin to velocity")
@@ -75,4 +75,4 @@ def hold_until_v(xv = None, yv = None, zv = None, tol = 0.1):
             zv = zv - 1;            
         if ((abs(xv - vel_x) < tol) and (abs(yv - vel_y) < tol) and (abs(zv - vel_z) < tol)):
             print("Velocity set")
-            break            
+            return 1  

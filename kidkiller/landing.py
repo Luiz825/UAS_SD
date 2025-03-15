@@ -1,13 +1,12 @@
 import learning as ln
 import listen as ls
 import arm as a
+import movement as m
 
 def settle_down():
     # Get mode ID for GUIDED
-    a.mode_activate("LAND")    
-    while True:
-        msg = ls.wait_4_msg("LOCAL_POSITION_NED")    
-        print(f"Current altitude: {msg.z:.2f}")
-        if abs(msg.z - 0) < 0.1 : break
+    a.mode_activate("RTL")
+    a.mode_activate("LAND")   
+    m.hold_until(t_z = 0, tol = 0.2)
     a.set_wrist(0)    
     print(ls.wait_4_ack())
