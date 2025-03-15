@@ -17,7 +17,7 @@ def to_infinity_and_beyond(h, yaw = 0):
     a.mode_activate("GUIDED")
     a.set_wrist(1)
     ln.the_connection.mav.command_long_send(ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, yaw, 0, 0, h)    
-    print(ls.wait_4_ack())
+    print(ls.wait_4_msg(str_type="COMMAND_ACK"))
     m.hold_until(t_z = abs(h) * -1)     
 
 
