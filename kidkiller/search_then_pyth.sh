@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "waiting for /dev/ttyUSB0..."
+echo "waiting for /dev/ttyUSB0..." >> /
 
 while [ ! -e /dev/ttyUSB0 ]; do
     sleep 1
