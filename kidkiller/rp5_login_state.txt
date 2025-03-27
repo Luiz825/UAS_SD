@@ -1,0 +1,192 @@
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+Was not able to find /dev/ttyUSB0 sry :(\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\n
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:27 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:28 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:29 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:30 AM PDT
+Was not able to find /dev/ttyUSB0 sry :(\nThu 27 Mar 2025 09:20:31 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:32 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:33 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:34 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:35 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:20:36 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:21:59 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:00 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:01 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:02 AM PDT
+Was not able to find /dev/ttyUSB0 sry :(\nThu 27 Mar 2025 09:22:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:04 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:22:08 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:01 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:02 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:04 AM PDT
+Was not able to find /dev/ttyUSB0 sry :(\nThu 27 Mar 2025 09:24:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:08 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:24:09 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:04 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:08 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:09 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:10 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:11 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:12 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:26:13 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:46 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:47 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:48 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:49 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:50 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:51 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:52 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:53 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:54 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:27:55 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:15 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:16 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:17 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:18 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:19 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:28:20 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:04 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:08 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:09 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:10 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:11 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:30:12 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:38 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:39 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:40 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:41 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:42 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:43 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:44 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:45 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:31:46 AM PDT
+Was not able to find /dev/ttyUSB0 sry :(\nThu 27 Mar 2025 09:31:47 AM PDT
+/dev/ttyUSB0 found! Running python...
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:01 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:02 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:04 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:08 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:32:09 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:00 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:01 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:02 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:04 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:05 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:06 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:07 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:36:08 AM PDT
+Activate drone detection! :0\nThu 27 Mar 2025 09:41:22 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:41:23 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:41:24 AM PDT
+Activate drone detection! :0\nThu 27 Mar 2025 09:44:51 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:44:52 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 09:44:53 AM PDT
+Activate drone detection! :0\nThu 27 Mar 2025 10:03:22 AM PDT
+Activate drone detection! :0\nThu 27 Mar 2025 10:06:30 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 10:06:31 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 10:06:32 AM PDT
+Activate drone detection! :0\nThu 27 Mar 2025 10:07:02 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 10:07:03 AM PDT
+waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 10:07:04 AM PDT
