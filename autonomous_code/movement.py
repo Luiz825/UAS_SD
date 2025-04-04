@@ -3,7 +3,10 @@ import arm as a
 import learning as ln
 import listen as ls
 
-def vel_or_waypoint_mv(x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):# in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
+#mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT
+
+def vel_or_waypoint_mv(frame = 1, x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):
+    # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
     a.mode_activate("GUIDED")
     # if all of these parameters can be organized in a list format
@@ -11,43 +14,44 @@ def vel_or_waypoint_mv(x = None, y = None, z = None, xv = None, yv = None, zv = 
     # i also don't really recall if you need to force cast thos strings
 
     if (x != None or y != None or z != None):
-        waypoint_mv(x, y, z, yaw)        
+        waypoint_mv(frame, x, y, z, yaw)        
     elif (xv != None or yv != None or zv != None):
-        vel_mv(xv, yv, zv, yaw)        
+        vel_mv(frame, xv, yv, zv, yaw)        
     # elif (xa != None or ya != None or za != None):
     #     __hit_the_gas(xa, ya, za, yaw)    
     
-def waypoint_mv(x, y, z, yaw):
+def waypoint_mv(frame, x, y, z, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     x = pos.x if x is None else x
     y = pos.y if y is None else y
     z = 0 if z is None else z    
     yaw =  (ls.wait_4_msg("ATTITUDE")).yaw if yaw is None else yaw
     
-    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
-    hold_until(x, y, (z + pos.z))
+    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
+    hold_until(frame, x, y, (z + pos.z))
 
-def vel_mv(xv, yv, zv, yaw):
+def vel_mv(frame, xv, yv, zv, yaw):
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     xv = pos.vx if xv is None else xv
     yv = pos.vy if yv is None else yv
     zv = pos.vx if zv is None else zv
     yaw =  (ls.wait_4_msg("ATTITUDE")).yaw if yaw is None else yaw
 
-    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, xv, yv, zv, 0, 0, 0, yaw, 0))
-    hold_until_v(xv, yv, zv)
+    ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 3527, 0, 0, 0, xv, yv, zv, 0, 0, 0, yaw, 0))
+    hold_until_v(frame, xv, yv, zv)
 
 # def __hit_the_gas(xa, ya, za, yaw):
 #     ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, 0, 0, 0, xa, ya, za, yaw, 0))
              
-def hold_until(t_x = None, t_y = None, t_z = None, tol = 0.5):
+def hold_until(frame, t_x = None, t_y = None, t_z = None, tol = 0.5):
     print("Begin to waypoint")   
-    pos = ls.wait_4_msg("LOCAL_POSITION_NED")
+    rel = "LOCAL_POSITION_NED" if frame == 1 else "GLOBAL_POSITION_INT" 
+    pos = ls.wait_4_msg(rel)
     t_x = pos.x if t_x is None else t_x
     t_y = pos.y if t_y is None else t_y
     t_z = pos.z if t_z is None else t_z  
     while True:        
-        msg = ls.wait_4_msg("LOCAL_POSITION_NED")
+        msg = ls.wait_4_msg(rel)
         x = msg.x
         y = msg.y
         z = msg.z
@@ -55,9 +59,11 @@ def hold_until(t_x = None, t_y = None, t_z = None, tol = 0.5):
         print(f"Target Position: x = {t_x:.2f}, y = {t_y:.2f}, z = {t_z:.2f}m")
         if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
             print("Position set")  
-            return 1     
+            return   
 
-def hold_until_v(xv = None, yv = None, zv = None, tol = 0.1):    
+#ignore vel commands for now not really necessary
+
+def hold_until_v(frame, xv = None, yv = None, zv = None, tol = 0.1):    
     print("Begin to velocity")
     pos = ls.wait_4_msg("LOCAL_POSITION_NED")
     xv = pos.vx if xv is None else xv
