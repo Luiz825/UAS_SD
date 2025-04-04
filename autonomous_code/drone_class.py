@@ -19,15 +19,7 @@ class Drone:
         self.t_sess = 10
 
         async def check_telem(self, batt_lim):
-            while self.active:
-                t_telem, msg_telem = await a.to_thread(ls.wait_4_msg, str_type="HEARTBEAT", time_out_sess=self.t_sess, attempts=5)
-                if msg_telem and t_telem <= self.t_sess:
-                    print(msg_telem)
-                else:
-                    print(f"Broken signal {time.time()}")
-                    self.active = False
-                    await a.sleep(0.1)
-                    continue
+            while self.active:                
                 t_stat, msg_stat = await a.to_thread(ls.wait_4_msg, str_type="SYS_STATUS", time_out_sess = self.t_sess, attempts = 2)
                 if msg_stat and t_stat <= self.t_sess:
                     if msg_stat.battery_remaining == -1: print("Battery info unavailable :<")
