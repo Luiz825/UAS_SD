@@ -5,10 +5,10 @@ import learning as ln
 # Wait for the first heartbeat
 #   This sets the system and component ID of remote system for the link
 
-def wait_4_msg(str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", "MISSION_COUNT", "MISSION_ITEM_INT"], time_out_sess = None, attempts = 4):    
+def wait_4_msg(str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", "MISSION_COUNT", "MISSION_ITEM_INT"], block = False, time_out_sess = None, attempts = 4):    
     #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
     if time_out_sess is None:
-        msg = ln.the_connection.recv_match(type = str_type, blocking = False)
+        msg = ln.the_connection.recv_match(type = str_type, blocking = block)
         return msg
     else:        
         temp = time_out_sess / attempts

@@ -6,12 +6,20 @@ import movement as m
 import back_l2_aunch as back
 import landing as la
 import record_time_log_hb as r 
+import drone_class as dc
 import asyncio
+import sys
 
 async def main():
     loop = asyncio.get_event_loop()
+    drone = dc.Drone(10)
 
-    await asyncio.gather(loop.run_in_executor(None, ), loop.run_in_executor(None, m.vel_or_waypoint_mv, 5, 10))
+    await asyncio.gather(
+        drone.check_telem(),
+        drone.grab_mission_stat(),
+        drone.mission_exec(),
+        drone.land_question()
+    )
 
 #this will run the following plans:
 '''
@@ -22,12 +30,17 @@ if either fail the will be sent to landing protoccol
 will begin by starting takeoff protoccol
 Question: should it just go straight to landing OR be another async that will go back to path if the issue was resolved
 '''
-print(ls.wait_4_msg("HEARTBEAT"))
-to.to_infinity_and_beyond(h = 130)
-# back.ret_to_base(start = 1)
-asyncio.run(main())
+if __name__ == '__main__':
+    with open("/media/cece/DuelData/academic/SDSU/SP2025/COMPE492/STORK_TEST.txt", "w") as f:
+        # Redirect stdout to the file
+        sys.stdout = f
+        print(ls.wait_4_msg("HEARTBEAT", block=True))
+        to.to_infinity_and_beyond(h = 10)
 
-#need 
+        asyncio.run(main())
+    print(f"done or did nt work lol")
+
+    #need hy
 
 
 

@@ -18,7 +18,7 @@ async def log_test(filename = "FILE_log.cvs", time_out_sec = 15, loop_time_min =
         scribe = csv.writer(file)
         start_ = time.time()
         while ((time.time() - start_) / 60) < loop_time_min:
-            tm, msg = ls.wait_4_msg("LOCAL_POSITION_NED", time_out_sec, 3)
+            tm, msg = ls.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=time_out_sec, attempts=3)
             if tm == time_out_sec:
                 break
             timestamp = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
