@@ -55,8 +55,8 @@ def hold_until(frame=1, t_x = None, t_y = None, t_z = None, tol = 0.5):
         x = msg.x
         y = msg.y
         z = msg.z
-        print(f"Current Position: x = {x:.2f}, y = {y:.2f}, z = {z:.2f}m")
-        print(f"Target Position: x = {t_x:.2f}, y = {t_y:.2f}, z = {t_z:.2f}m")
+        print(f"Current Position: x = {x:.2f} m, y = {y:.2f} m, z = {z:.2f} m")
+        print(f"Target Position: x = {t_x:.2f} m, y = {t_y:.2f} m, z = {t_z:.2f} m")
         if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
             print("Position set")  
             return   

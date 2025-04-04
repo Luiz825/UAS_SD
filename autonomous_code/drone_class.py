@@ -3,7 +3,7 @@ import listen as ls
 import landing as l
 import movement as m
 import asyncio as a
-import time
+from pymavlink import mavutil
 from datetime import datetime
 
 class Drone:
@@ -13,8 +13,9 @@ class Drone:
         self.mission = False
         self.active = True
         self.battery = 100
-        self.conn_qual = 100
-        self.prev_qual = 100        
+        self.conn_qual = 0 # the lower the better meaning no packets lost 
+        #% is the % of packages lost 
+        self.prev_qual = 0       
         self.t_sess = t
 
     async def check_telem(self):
@@ -31,6 +32,11 @@ class Drone:
 
     async def grab_mission_stat(self):
         while self.active:
+            self.ze_connection.mav.mission_request_list_send(
+                target_system=self.ze_connection.target_system,
+                target_component=self.ze_connection.target_component
+            )
+            await a.sleep(0.01)
             msg_mission = await a.to_thread(ls.wait_4_msg, str_type="MISSION_COUNT")
             if msg_mission:
                 self.mission = True
@@ -38,17 +44,24 @@ class Drone:
                 print(f"Recieving mission waypoints!")
                 for i in range(cnt):
                     self.ze_connection.mav.mission_request_send(
-                        target_system=1,
-                        target_component=0,
+                        target_system=self.ze_connection.target_system,
+                        target_component=self.ze_connection.target_component,
                         seq=i
                     )
-                    await a.sleep(0.05)
+                    await a.sleep(0.01)
                     msg_item = None
                     while msg_item is None:
                         msg_item = await a.to_thread(ls.wait_4_msg, str_type = "MISSION_ITEM")
                     await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
                     print(f"Waypoint {i} recieved!")
+                self.ze_connection.mav.mission_ack_send(
+                    target_system=self.ze_connection.target_system,
+                    target_component=self.ze_connection.target_component,
+                    type=mavutil.mavlink.MAV_MISSION_ACCEPTED
+                )
                 print(f"All {cnt} items recieved!")
+            else:
+                print(f"No mission :<")
             await a.sleep(0.5)   
 
     async def mission_exec(self):
@@ -79,10 +92,10 @@ class Drone:
             avg_qual = (avg_qual + self.prev_qual + self.conn_qual) / 3
             now = datetime.now()
             print(f"Battery: {self.battery}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
-            print(f"Connection Qualtiy: {avg_qual}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
-            if (self.conn_qual < 25 and avg_qual < 25):
+            print(f"Connection Quality: {avg_qual}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
+            if (self.conn_qual > 75 and avg_qual < 75):
                 iter = iter + 1                    
-                if (iter == 25):
+                if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
             elif self.battery < 25:
