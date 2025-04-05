@@ -21,6 +21,7 @@ class Drone:
         self.t_sess = t
 
     async def check_telem(self):
+        ## CHECK THE TELEMETRY DATA ##
         while self.active:                
             t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", time_out_sess = self.t_sess, attempts = 2)
             if msg_stat and t_stat <= self.t_sess:
@@ -33,12 +34,13 @@ class Drone:
             await a.sleep(1)           
 
     async def grab_mission_stat(self):
+        ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
         while self.active:
             self.ze_connection.mav.mission_request_list_send(
                 target_system=self.ze_connection.target_system,
                 target_component=self.ze_connection.target_component
             )
-            await a.sleep(0.01)
+            await a.sleep(0.1)
             msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
             if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
@@ -49,7 +51,7 @@ class Drone:
                         target_component=self.ze_connection.target_component,
                         seq=i
                     )
-                    await a.sleep(0.01)
+                    await a.sleep(0.1)
                     msg_item = None
                     print(f"Looking for waypoint {i}!")
                     while msg_item is None:
@@ -71,7 +73,7 @@ class Drone:
                 msg_mission_start = None
                 while msg_mission_start is None:
                     msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
-                    
+                    await a.sleep(0.1)
                 self.mission = True
                 print("Mission started")
             else:
@@ -79,6 +81,7 @@ class Drone:
             await a.sleep(0.5)   
 
     async def mission_exec(self):
+        ## EXECUTE MISSION AND WAIT UNTIL DONE ##
         current_seq = 0
         while self.active:
             now = datetime.now()
@@ -97,6 +100,7 @@ class Drone:
             await a.sleep(1)
     
     async def land_question(self):
+        ## CHECK IF NEED TO LAND ##
         avg_qual = self.conn_qual
         iter = 0
         while self.active:            
@@ -167,7 +171,7 @@ class Drone:
                     continue
                 elif msg:                
                     return (time.time() - start_), msg
-                time.sleep(0.01)
+                time.sleep(0.1)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved
         
