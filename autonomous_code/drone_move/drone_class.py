@@ -1,10 +1,11 @@
-import drone_move.learning as ln
+import learning as ln
 import asyncio as a
 from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
 import time
-
+import os
+import csv
 
 class Drone:
     def __init__(self, t):
@@ -14,9 +15,9 @@ class Drone:
         self.active = True
         self.battery = 100
         self.conn_qual = 0 # the lower the better meaning no packets lost 
-        #% is the % of packages lost 
-        self.mode = "STABILIZE"
-        self.prev_qual = 0       
+        self.prev_qual = 0 
+        # % is the % of packages lost 
+        self.mode = "STABILIZE"              
         self.t_sess = t
 
     async def check_telem(self):
@@ -39,8 +40,7 @@ class Drone:
             )
             await a.sleep(0.01)
             msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
-            if msg_mission and not self.mission and msg_mission.count > 1:
-                self.mission = True
+            if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
                 print(f"Recieving #{cnt} mission waypoints!")
                 for i in range(cnt):
@@ -59,33 +59,42 @@ class Drone:
                         if not self.active:
                             print("Died in search! :O")
                             return
-                    await self.waypoint_queue.put(msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
+                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
                     print(f"Waypoint {i} recieved!")                
-                print(f"All {cnt} items recieved!")
+                print(f"All {cnt} items recieved!")                
+                self.mode = "AUTO"
+                self.ze_connection.mav.command_long_send(
+                    self.ze_connection.target_system,
+                    self.ze_connection.target_component,
+                    mavutil.mavlink.MAV_CMD_MISSION_START,
+                    0, 0, 0, 0, 0, 0, 0, 0)
+                msg_mission_start = None
+                while msg_mission_start is None:
+                    msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
+                    
+                self.mission = True
+                print("Mission started")
             else:
                 print(f"Nothing new/No new mission :<")
             await a.sleep(0.5)   
 
     async def mission_exec(self):
+        current_seq = 0
         while self.active:
-            if self.mission and not self.waypoint_queue.empty():                    
-                try:
-                    print(f"Going to waypoint!")
-                    # Try to get an item from the queue with a timeout (e.g., 2 seconds)
-                    frame, x, y, z = await a.wait_for(self.waypoint_queue.get(), timeout=2)
-
-                    # Process the waypoint
-                    await a.to_thread(self.vel_or_waypoint_mv, frame=frame, x=x, y=y, z=z, mode=self.mode)
-
-                    # Mark this task as done
-                    self.waypoint_queue.task_done()
-                    print("Waypoint reached!")
-                    
-                except a.TimeoutError:
-                    # Timeout occurred, no items in the queue within 2 seconds
-                    if self.waypoint_queue.empty():
-                        self.mission = False                                    
-            await a.sleep(2)
+            now = datetime.now()
+            if self.mission and not self.waypoint_queue.empty(): 
+                while self.mode != "AUTO":
+                    await a.sleep(0.5)
+                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION CURRENT")
+                if msg:
+                    if msg.seq == current_seq + 1:
+                        frame, x, y, z = await self.waypoint_queue.get()
+                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, {z/1000}\n at at {now.strftime("%Y-%m-%d %H:%M:%S")}")                    
+                        current_seq = msg.seq
+            elif self.mission and self.waypoint_queue.empty():
+                self.mode = "GUIDED"
+                self.mission = False
+            await a.sleep(1)
     
     async def land_question(self):
         avg_qual = self.conn_qual
@@ -100,7 +109,7 @@ class Drone:
                 if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
-            elif self.battery < 50:
+            elif self.battery < 80:
                 self.active = False
                 print(f"Battery low!")
             else:
@@ -110,8 +119,41 @@ class Drone:
         self.mission = False
         await a.to_thread(self.settle_down)
         await a.sleep(2)
+    
+    async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10):
+        if not os.path.isfile(filename):
+            with open(filename, mode = "w", newline = "") as file:
+                scribe = csv.writer(file)
+                scribe.writerow(["Timestamp", "Timelapse", "Distance"])
+        
+        # will only allow a time of ten minutes of recording data
+        with open(filename, mode = "a", newline = "") as file:
+            scribe = csv.writer(file)
+            start_ = time.time()
+            while ((time.time() - start_) / 60) < loop_time_min:
+                now = datetime.now()
+                tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
+                if tm == self.t_sess:
+                    break
+                timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+                pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
+                scribe.writerow([timestamp, tm, pos])
 
-    def wait_4_msg(self, str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", "MISSION_COUNT", "MISSION_ITEM_INT"], block = False, time_out_sess = None, attempts = 4):    
+                file.flush()
+                await a.sleep(3)
+    
+    async def change_mode(self):
+        mode = self.mode
+        while True:
+            await a.sleep(0.1)
+            if mode != self.mode:
+                self.mode_activate(self.mode)
+                mode = self.mode
+            await a.sleep(0.1) 
+
+    def wait_4_msg(self, str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", 
+                                           "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", 
+                                           "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"], block = False, time_out_sess = None, attempts = 4):    
     #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
@@ -128,11 +170,12 @@ class Drone:
                 time.sleep(0.01)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved
-    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None, mode = "GUIDED"):
+        
+    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
-        if mode != "GUIDED":
-            self.mode_activate("GUIDED")
+        if self.mode != "GUIDED":
+            self.mode = "GUIDED"
         # if all of these parameters can be organized in a list format
         # [j = getattr(str("pos.")+str(j) if j is None else j)]
         # i also don't really recall if you need to force cast thos strings
@@ -147,12 +190,16 @@ class Drone:
         z = 0 if z is None else z    
         yaw = self.wait_4_msg("ATTITUDE", block = True).yaw if yaw is None else yaw
         
-        ln.the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, ln.the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
+        self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(0, ln.the_connection.target_system, 
+                                                                                                 ln.the_connection.target_component, 
+                                                                                                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                                                                                                 4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
+        
         self.hold_until(frame, x, y, (z + pos.z))
+
     def hold_until(self, frame=1, t_x = None, t_y = None, t_z = None, tol = 0.5):
         print("Begin to waypoint")   
-        rel = "LOCAL_POSITION_NED" if frame != 0 else "GLOBAL_POSITION_INT"
-        
+        rel = "LOCAL_POSITION_NED" if frame != 0 else "GLOBAL_POSITION_INT"        
         # Wait for initial position
         pos = self.wait_4_msg(rel, block=True)
         if rel == "LOCAL_POSITION_NED":
@@ -181,7 +228,7 @@ class Drone:
                 print("Position set")  
                 return  
 
-    def mode_activate(self, mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL", "LOITER", "RTL"]):
+    def mode_activate(self, mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL", "LOITER", "RTL", "AUTO"]):
         # Get mode ID for GUIDED
         mode_id = self.ze_connection.mode_mapping()[mode_e]
         # Send mode change request
@@ -202,6 +249,7 @@ class Drone:
             self.ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
             0, arm_disarm, 0, 0, 0, 0, 0, 0)
+        
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))    
 
     def manual_sett(self):
@@ -209,11 +257,11 @@ class Drone:
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True)) 
 
     def settle_down(self):
-        # Get mode ID for GUIDED
-        self.mode_activate("RTL") 
+        # Get mode ID for GUIDED        
+        self.mode = "RTL"
         self.hold_until(t_z = 0, tol = 1)    
-        self.set_wrist(0)    
-        self.mode_activate("STABILIZE")
+        self.set_wrist(0)            
+        self.mode = "STABILIZE"
         print(self.wait_4_msg(str_type="HEARTBEAT", block=True))
         
     def to_infinity_and_beyond(self, h, yaw = 0):     
@@ -230,3 +278,20 @@ class Drone:
  
 
                     
+#trash:
+# try:
+    #     print(f"Going to waypoint!")
+    #     # Try to get an item from the queue with a timeout (e.g., 2 seconds)
+    #     frame, x, y, z = await a.wait_for(self.waypoint_queue.get(), timeout=2)
+
+    #     # Process the waypoint
+    #     #await a.to_thread(self.vel_or_waypoint_mv, frame=frame, x=x, y=y, z=z, mode=self.mode)
+        
+    #     # Mark this task as done
+    #     self.waypoint_queue.task_done()
+    #     print("Waypoint reached!")
+        
+    # except a.TimeoutError:
+    #     # Timeout occurred, no items in the queue within 2 seconds
+    #     if self.waypoint_queue.empty():
+    #         self.mission = False   

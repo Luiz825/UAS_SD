@@ -1,11 +1,4 @@
-import drone_move.learning as ln
 import listen as ls
-import arm as a
-import takeoff as to
-import movement as m
-import back_l2_aunch as back
-import landing as la
-import record_time_log_hb as r 
 import drone_class as dc
 import asyncio
 import sys
@@ -18,7 +11,8 @@ async def main():
         drone.check_telem(),
         drone.grab_mission_stat(),
         drone.mission_exec(),
-        drone.land_question()
+        drone.land_question(),
+        drone.change_mode()
     )
     
 
