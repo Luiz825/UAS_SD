@@ -1,9 +1,9 @@
 import movement as m
-import learning as ln
+import drone_move.learning as ln
 import listen as ls
 import math
 import time
-from PID import PID
+from drone_move.PID import PID
 
 def move_point(x, y, z, dur = None):
     kp = 0.1

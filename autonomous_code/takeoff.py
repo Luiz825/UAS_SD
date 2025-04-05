@@ -1,7 +1,7 @@
 from pymavlink import mavutil
 import arm as a
 import movement as m
-import learning as ln
+import drone_move.learning as ln
 import listen as ls  
 
 # takeoff only in the z plane no takeoff to a lat-lon position just goes up

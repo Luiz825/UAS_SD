@@ -44,7 +44,7 @@ if __name__ == '__main__':
         asyncio.run(main())
 
         sys.stdout = original_stdout  # Restore stdout
-
+        
         f.close() 
     
     print(f"done or did nt work lol")

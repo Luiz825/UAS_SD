@@ -1,6 +1,6 @@
 from pymavlink import mavutil
 import arm as a
-import learning as ln
+import drone_move.learning as ln
 import listen as ls
 
 #mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT

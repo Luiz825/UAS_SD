@@ -1,6 +1,6 @@
 import time
 from typing import Literal
-import learning as ln
+import drone_move.learning as ln
 
 # Wait for the first heartbeat
 #   This sets the system and component ID of remote system for the link
