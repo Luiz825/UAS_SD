@@ -15,6 +15,7 @@ class Drone:
         self.battery = 100
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         #% is the % of packages lost 
+        self.mode = "STABILIZE"
         self.prev_qual = 0       
         self.t_sess = t
 
@@ -38,11 +39,11 @@ class Drone:
             )
             await a.sleep(0.01)
             msg_mission = await a.to_thread(ls.wait_4_msg, str_type="MISSION_COUNT")
-            if msg_mission:
+            if msg_mission and not self.mission and msg_mission.count > 1:
                 self.mission = True
                 cnt = msg_mission.count
-                print(f"Recieving mission waypoints!")
-                for i in range(1, cnt):
+                print(f"Recieving #{cnt} mission waypoints!")
+                for i in range(cnt):
                     self.ze_connection.mav.mission_request_int_send(
                         target_system=self.ze_connection.target_system,
                         target_component=self.ze_connection.target_component,
@@ -53,16 +54,16 @@ class Drone:
                     print(f"Looking for waypoint {i}!")
                     while msg_item is None:
                         print(f"Search for item {i}")
-                        msg_item = await a.to_thread(ls.wait_4_msg, str_type = "MISSION_ITEM")
+                        msg_item = await a.to_thread(ls.wait_4_msg, str_type = "MISSION_ITEM_INT")
                         await a.sleep(0.1)
                         if not self.active:
-                            print("Found nothing and died! :O")
+                            print("Died in search! :O")
                             return
-                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
+                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z, mode=self.mode))
                     print(f"Waypoint {i} recieved!")                
                 print(f"All {cnt} items recieved!")
             else:
-                print(f"No mission :<")
+                print(f"Nothing new/No new mission :<")
             await a.sleep(0.5)   
 
     async def mission_exec(self):
@@ -99,7 +100,7 @@ class Drone:
                 if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
-            elif self.battery < 85:
+            elif self.battery < 50:
                 self.active = False
                 print(f"Battery too low!")
             else:

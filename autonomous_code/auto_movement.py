@@ -40,10 +40,11 @@ if __name__ == '__main__':
         print("This goes to the file")
                
         print(ls.wait_4_msg("HEARTBEAT", block=True))
-        to.to_infinity_and_beyond(h = 10)
 
         asyncio.run(main())
+
         sys.stdout = original_stdout  # Restore stdout
+        
         f.close() 
     
     print(f"done or did nt work lol")
