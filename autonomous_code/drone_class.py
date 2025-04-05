@@ -42,23 +42,24 @@ class Drone:
                 self.mission = True
                 cnt = msg_mission.count
                 print(f"Recieving mission waypoints!")
-                for i in range(cnt):
-                    self.ze_connection.mav.mission_request_send(
+                for i in range(1, cnt):
+                    self.ze_connection.mav.mission_request_int_send(
                         target_system=self.ze_connection.target_system,
                         target_component=self.ze_connection.target_component,
                         seq=i
                     )
                     await a.sleep(0.01)
                     msg_item = None
+                    print(f"Looking for waypoint {i}!")
                     while msg_item is None:
+                        print(f"Search for item {i}")
                         msg_item = await a.to_thread(ls.wait_4_msg, str_type = "MISSION_ITEM")
+                        await a.sleep(0.1)
+                        if not self.active:
+                            print("Found nothing and died! :O")
+                            return
                     await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    print(f"Waypoint {i} recieved!")
-                self.ze_connection.mav.mission_ack_send(
-                    target_system=self.ze_connection.target_system,
-                    target_component=self.ze_connection.target_component,
-                    type=mavutil.mavlink.MAV_MISSION_ACCEPTED
-                )
+                    print(f"Waypoint {i} recieved!")                
                 print(f"All {cnt} items recieved!")
             else:
                 print(f"No mission :<")
@@ -93,12 +94,12 @@ class Drone:
             now = datetime.now()
             print(f"Battery: {self.battery}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
             print(f"Connection Quality: {avg_qual}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
-            if (self.conn_qual > 75 and avg_qual < 75):
+            if (self.conn_qual > 75 and avg_qual > 75):
                 iter = iter + 1                    
                 if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
-            elif self.battery < 25:
+            elif self.battery < 85:
                 self.active = False
                 print(f"Battery too low!")
             else:

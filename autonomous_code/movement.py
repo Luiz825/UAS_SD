@@ -45,16 +45,30 @@ def vel_mv(frame, xv, yv, zv, yaw):
              
 def hold_until(frame=1, t_x = None, t_y = None, t_z = None, tol = 0.5):
     print("Begin to waypoint")   
-    rel = "LOCAL_POSITION_NED" if frame == 1 else "GLOBAL_POSITION_INT" 
-    pos = ls.wait_4_msg(rel, block = True)
-    t_x = pos.x if t_x is None else t_x
-    t_y = pos.y if t_y is None else t_y
-    t_z = pos.z if t_z is None else t_z  
-    while True:        
-        msg = ls.wait_4_msg(rel, block = True)
-        x = msg.x
-        y = msg.y
-        z = msg.z
+    rel = "LOCAL_POSITION_NED" if frame != 0 else "GLOBAL_POSITION_INT"
+    
+    # Wait for initial position
+    pos = ls.wait_4_msg(rel, block=True)
+    if rel == "LOCAL_POSITION_NED":
+        t_x = pos.x if t_x is None else t_x
+        t_y = pos.y if t_y is None else t_y
+        t_z = pos.z if t_z is None else t_z
+    else:
+        lat = pos.lat / 1e7
+        lon = pos.lon / 1e7
+        alt = pos.alt / 1000.0  # assuming millimeters
+        t_x = lat if t_x is None else t_x
+        t_y = lon if t_y is None else t_y
+        t_z = alt if t_z is None else t_z
+
+    while True:
+        msg = ls.wait_4_msg(rel, block=True)
+        if rel == "LOCAL_POSITION_NED":
+            x, y, z = msg.x, msg.y, msg.z
+        else:
+            x = msg.lat / 1e7
+            y = msg.lon / 1e7
+            z = msg.alt / 1000.0
         print(f"Current Position: x = {x:.2f} m, y = {y:.2f} m, z = {z:.2f} m")
         print(f"Target Position: x = {t_x:.2f} m, y = {t_y:.2f} m, z = {t_z:.2f} m")
         if(abs(t_x - x) < tol and abs(t_y - y) < tol and abs(t_z - z) < tol):
