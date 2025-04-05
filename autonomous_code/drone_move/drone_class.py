@@ -125,6 +125,7 @@ class Drone:
         await a.sleep(2)
     
     async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10):
+        ## LOG DATA ON THE POS ##
         if not os.path.isfile(filename):
             with open(filename, mode = "w", newline = "") as file:
                 scribe = csv.writer(file)
@@ -147,6 +148,7 @@ class Drone:
                 await a.sleep(3)
     
     async def change_mode(self):
+        ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
         while True:
             await a.sleep(0.1)
@@ -159,6 +161,7 @@ class Drone:
                                            "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", 
                                            "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"], block = False, time_out_sess = None, attempts = 4):    
     #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
+    ## WAIT FOR A MESSAGE FOR ONE CYCLE OR JUST UNTIL  ##
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
             return msg
@@ -178,6 +181,7 @@ class Drone:
     def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
+    ## MOVE DRONE ##
         if self.mode != "GUIDED":
             self.mode = "GUIDED"
         # if all of these parameters can be organized in a list format
@@ -188,6 +192,7 @@ class Drone:
             self.waypoint_mv(frame, x, y, z, yaw)                
         
     def waypoint_mv(self, frame, x, y, z, yaw):
+        ## CHANGE THE TARGET POS TO INPUT ##
         pos = self.wait_4_msg("LOCAL_POSITION_NED", block = True)
         x = pos.x if x is None else x
         y = pos.y if y is None else y
@@ -202,6 +207,7 @@ class Drone:
         self.hold_until(frame, x, y, (z + pos.z))
 
     def hold_until(self, frame=1, t_x = None, t_y = None, t_z = None, tol = 0.5):
+        ## HOLD UNTIL POS REACHED ##
         print("Begin to waypoint")   
         rel = "LOCAL_POSITION_NED" if frame != 0 else "GLOBAL_POSITION_INT"        
         # Wait for initial position
@@ -233,19 +239,12 @@ class Drone:
                 return  
 
     def mode_activate(self, mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL", "LOITER", "RTL", "AUTO"]):
+        ## CAHNGE THE MODE BASED ON POSSIBLE INPUTS ##
         # Get mode ID for GUIDED
         mode_id = self.ze_connection.mode_mapping()[mode_e]
         # Send mode change request
         ln.the_connection.set_mode(mode_id)
         print(f"Mode changed to {mode_e}!")   
-
-    def guide(self):
-        # MAV_CMD_NAV_GUIDED_ENABLE 
-        self.ze_connection.mav.command_long_send(
-            self.ze_connection.target_system, 
-            self.ze_connection.target_component, 
-            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
-            0, 1, 0, 0, 0, 0, 0, 0)
 
     def set_wrist(self, arm_disarm):
         self.ze_connection.mav.command_long_send(
@@ -255,10 +254,6 @@ class Drone:
             0, arm_disarm, 0, 0, 0, 0, 0, 0)
         
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))    
-
-    def manual_sett(self):
-        self.ze_connection.mav.manual_control_send(self.ze_connection.target_system, 0, 0, 500,  0,  0)
-        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True)) 
 
     def settle_down(self):
         # Get mode ID for GUIDED        
