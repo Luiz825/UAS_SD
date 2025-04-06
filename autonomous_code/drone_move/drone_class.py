@@ -16,6 +16,7 @@ class Drone:
         self.battery = 100
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         self.prev_qual = 0 
+        self.current_waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
         # % is the % of packages lost 
         self.mode = "STABILIZE"              
         self.t_sess = t
@@ -50,7 +51,7 @@ class Drone:
                         target_system=self.ze_connection.target_system,
                         target_component=self.ze_connection.target_component,
                         seq=i
-                    )
+                    )   
                     await a.sleep(0.1)
                     msg_item = None
                     print(f"Looking for waypoint {i}!")
@@ -61,8 +62,15 @@ class Drone:
                         if not self.active:
                             print("Died in search! :O")
                             return
-                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    print(f"Waypoint {i} recieved!")                
+                    (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
+                    if self.current_waypoint_0 != (frame, x, y, z) and i == 0:
+                        await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
+                        self.current_waypoint_0 = (frame, x, y, z)
+                    else:
+                        print(f"Same as previousl mission :)")
+                        await a.sleep(5)
+                        continue #to restart the while self.active loop in the beginning
+                    print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
                 print(f"All {cnt} items recieved!")                
                 self.mode = "AUTO"
                 self.ze_connection.mav.command_long_send(
@@ -73,6 +81,7 @@ class Drone:
                 msg_mission_start = None
                 while msg_mission_start is None:
                     msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
+                    print(msg_mission_start)
                     await a.sleep(0.1)
                 self.mission = True
                 print("Mission started")
@@ -84,11 +93,12 @@ class Drone:
         ## EXECUTE MISSION AND WAIT UNTIL DONE ##
         current_seq = 0
         while self.active:
+            print(f"Mission execution: {current_seq}")
             now = datetime.now()
             if self.mission and not self.waypoint_queue.empty(): 
                 while self.mode != "AUTO":
                     await a.sleep(0.5)
-                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION CURRENT")
+                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
                 if msg:
                     if msg.seq == current_seq + 1:
                         frame, x, y, z = await self.waypoint_queue.get()
@@ -113,7 +123,7 @@ class Drone:
                 if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
-            elif self.battery < 80:
+            elif self.battery < 50:
                 self.active = False
                 print(f"Battery low!")
             else:
@@ -209,10 +219,10 @@ class Drone:
     def hold_until(self, frame=1, t_x = None, t_y = None, t_z = None, tol = 0.5):
         ## HOLD UNTIL POS REACHED ##
         print("Begin to waypoint")   
-        rel = "LOCAL_POSITION_NED" if frame != 0 else "GLOBAL_POSITION_INT"        
+        rel = "LOCAL_POSITION_NED" if frame == 1 else "GLOBAL_POSITION_INT"        
         # Wait for initial position
         pos = self.wait_4_msg(rel, block=True)
-        if rel == "LOCAL_POSITION_NED":
+        if frame == 1:
             t_x = pos.x if t_x is None else t_x
             t_y = pos.y if t_y is None else t_y
             t_z = pos.z if t_z is None else t_z
@@ -220,13 +230,13 @@ class Drone:
             lat = pos.lat / 1e7
             lon = pos.lon / 1e7 
             alt = pos.alt / 1000.0  # assuming millimeters
-            t_x = lat if t_x is None else t_x / 1e7
-            t_y = lon if t_y is None else t_y / 1e7
-            t_z = alt if t_z is None else t_z /1e7
+            t_x = lat if t_x is None else t_x
+            t_y = lon if t_y is None else t_y
+            t_z = alt if t_z is None else t_z
 
         while True:
             msg = self.wait_4_msg(rel, block=True)
-            if rel == "LOCAL_POSITION_NED":
+            if frame == 1:
                 x, y, z = msg.x, msg.y, msg.z
             else:
                 x = msg.lat / 1e7
@@ -258,7 +268,7 @@ class Drone:
     def settle_down(self):
         # Get mode ID for GUIDED        
         self.mode = "RTL"
-        self.hold_until(t_z = 0, tol = 1)    
+        self.hold_until(t_x = 0, t_y = 0, t_z = 0, tol = 0.1) 
         self.set_wrist(0)            
         self.mode = "STABILIZE"
         print(self.wait_4_msg(str_type="HEARTBEAT", block=True))
