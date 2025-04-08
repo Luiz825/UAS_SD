@@ -161,6 +161,10 @@ class Drone:
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
         while True:
+            msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
+            hb_mode = None
+            if msg_hb:
+                hb_mode = msg_hb.custom_mode
             await a.sleep(0.1)
             if mode != self.mode:
                 self.mode_activate(self.mode)
