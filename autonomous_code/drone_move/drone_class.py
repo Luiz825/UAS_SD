@@ -8,7 +8,7 @@ import os
 import csv
 
 class Drone:
-    def __init__(self, t):
+    def __init__(self, t=10):
         self.ze_connection = ln.the_connection
         self.waypoint_queue = a.Queue()      
         self.mission = False
@@ -20,10 +20,13 @@ class Drone:
         # % is the % of packages lost 
         self.mode = "STABILIZE"              
         self.t_sess = t
+        self.drop = True
 
     async def check_telem(self):
         ## CHECK THE TELEMETRY DATA ##
-        while self.active:                
+        while self.active:  
+            if self.mode == "MANUAL":
+                continue              
             t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", time_out_sess = self.t_sess, attempts = 2)
             if msg_stat and t_stat <= self.t_sess:
                 if msg_stat.battery_remaining == -1: 
@@ -37,6 +40,8 @@ class Drone:
     async def grab_mission_stat(self):
         ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
         while self.active:
+            if self.mode == "MANUAL":
+                continue  
             self.ze_connection.mav.mission_request_list_send(
                 target_system=self.ze_connection.target_system,
                 target_component=self.ze_connection.target_component
@@ -93,6 +98,8 @@ class Drone:
         ## EXECUTE MISSION AND WAIT UNTIL DONE ##
         current_seq = 0
         while self.active:
+            if self.mode == "MANUAL":
+                continue  
             print(f"Mission execution: {current_seq}")
             now = datetime.now()
             if self.mission and not self.waypoint_queue.empty(): 
@@ -113,7 +120,9 @@ class Drone:
         ## CHECK IF NEED TO LAND ##
         avg_qual = self.conn_qual
         iter = 0
-        while self.active:            
+        while self.active:   
+            if self.mode == "MANUAL":
+                continue           
             avg_qual = (avg_qual + self.prev_qual + self.conn_qual) / 3
             now = datetime.now()
             print(f"Battery: {self.battery}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
@@ -157,6 +166,18 @@ class Drone:
                 file.flush()
                 await a.sleep(3)
     
+    async def payload_sequence(self, inst):
+        while self.active:
+            if self.mode == "MANUAL":
+                continue  
+            if self.drop:
+                await a.to_thread(self.move_servo, inst, 1500)
+                await a.sleep(10)
+                await a.to_thread(self.move_servo, inst, 1000)
+                await a.sleep(2)
+                self.drop = False
+            await a.sleep(0.1)
+
     async def change_mode(self):
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
@@ -166,7 +187,7 @@ class Drone:
             if msg_hb:
                 hb_mode = msg_hb.custom_mode
             await a.sleep(0.1)
-            if mode != self.mode:
+            if mode != self.mode or (hb_mode != None and hb_mode != self.mode):
                 self.mode_activate(self.mode)
                 mode = self.mode
             await a.sleep(0.1) 
@@ -286,7 +307,18 @@ class Drone:
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 
             0, 0, 0, 0, yaw, 0, 0, h)    
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))
-        self.hold_until(t_z = abs(h) * -1)     
+        self.hold_until(t_z = abs(h) * -1)   
+
+    def move_servo(self, inst, pwm):
+        self.ze_connection.mav.command_long_send(
+            target_system=self.ze_connection.target_system,
+            target_component=self.ze_connection.target_component,
+            command=mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+            confirmation=0,
+            param1=inst,
+            param2=pwm,
+            param3=0, param4=0, param5=0, param6=0, param7=0
+        )  
 
  
 
