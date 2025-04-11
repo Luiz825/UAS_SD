@@ -8,7 +8,7 @@ async def main(drone):
     
 
     await asyncio.gather(
-        drone.log_test()
+        drone.log_test(loop_time_sess=30) #30 minutes
     )
 
 # this is testing grounds for different paths and options

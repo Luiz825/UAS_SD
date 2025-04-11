@@ -4,6 +4,7 @@ from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
 import time
+import pigpio
 import os
 import csv
 
@@ -21,8 +22,9 @@ class Drone:
         self.mode = "STABILIZE"              
         self.t_sess = t
         self.drop = True
+        self.pi = pigpio.pi()
 
-    async def check_telem(self):
+    async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
         while self.active:  
             if self.mode == "MANUAL":
@@ -150,6 +152,7 @@ class Drone:
     
     async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
         ## LOG DATA ON THE POS ##
+        # the loop time is in minutes
         if not os.path.isfile(filename):
             with open(filename, mode = "w", newline = "") as file:
                 scribe = csv.writer(file)                
@@ -158,11 +161,11 @@ class Drone:
                 else:
                     scribe.writerow(["Timestamp", "Timelapse"]) 
         
-        # will only allow a time of ten minutes of recording data
+        # will only allow a time of ten minutes (default) of recording data
         with open(filename, mode = "a", newline = "") as file:
             scribe = csv.writer(file)
-            start_ = time.time()
-            while ((time.time() - start_) / 60) < loop_time_min:
+            start_ = self.pi.get_current_tick()
+            while (((self.pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
                     tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
@@ -182,6 +185,7 @@ class Drone:
                 await a.sleep(3)
     
     async def payload_sequence(self, inst):
+        ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
         while self.active:
             if self.mode == "MANUAL":
                 continue  
@@ -207,27 +211,27 @@ class Drone:
                 mode = self.mode
             await a.sleep(0.1) 
     
-    async def gyro_state_awarness(self):
-        while self.active:
+    # async def gyro_state_awarness(self):
+    #     while self.active:
 
 
     def wait_4_msg(self, str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", 
                                            "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", 
                                            "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"], block = False, time_out_sess = None, attempts = 4):    
-    #time_out_sess is for total time, will be spliced into attempts specificed by user or default 4
+    #time_out_sess is for total time but for the rp5 its gonna be in ticks so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4
     ## WAIT FOR A MESSAGE FOR ONE CYCLE OR JUST UNTIL  ##
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
             return msg
-        else:        
-            temp = time_out_sess / attempts
-            start_ = time.time()        
-            while (time.time() - start_) < time_out_sess:
+        else:                    
+            temp = time_out_sess * 1e6 / attempts
+            start_ = self.pi.get_current_tick()
+            while (self.pi.get_current_tick() - start_) < time_out_sess * 1e6:
                 msg = self.ze_connection.recv_match(type = str_type, blocking = False, timeout = temp)
                 if msg is None:
                     continue
                 elif msg:                
-                    return (time.time() - start_), msg
+                    return (self.pi.get_current_tick() - start_)/1e6, msg
                 time.sleep(0.1)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved
@@ -301,6 +305,7 @@ class Drone:
         print(f"Mode changed to {mode_e}!")   
 
     def set_wrist(self, arm_disarm):
+        ## SET THE DRONE TO ARMED OR DISARMED ##
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system, 
             self.ze_connection.target_component, 
@@ -310,14 +315,16 @@ class Drone:
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))    
 
     def settle_down(self):
-        # Get mode ID for GUIDED        
+        ## SETT DRONE BACK TO LAND ##
         self.mode = "RTL"
-        self.hold_until(t_x = 0, t_y = 0, t_z = 0, tol = 0.1) 
-        self.set_wrist(0)            
+        while self.battery > 10:
+            self.hold_until(t_x = 0, t_y = 0, t_z = 0, tol = 0.1)     
+        self.set_wrist(0)
         self.mode = "STABILIZE"
         print(self.wait_4_msg(str_type="HEARTBEAT", block=True))
         
-    def to_infinity_and_beyond(self, h, yaw = 0):     
+    def to_infinity_and_beyond(self, h, yaw = 0):   
+        ## TAKE OFF AND REACH AN ALTITUDE ##  
         self.mode_activate("GUIDED")
         self.set_wrist(1)
         self.the_connection.mav.command_long_send(
@@ -329,6 +336,7 @@ class Drone:
         self.hold_until(t_z = abs(h) * -1)   
 
     def move_servo(self, inst, pwm):
+        ## MOVE THE MOTOR AT INST A VAL OF PWM ##
         self.ze_connection.mav.command_long_send(
             target_system=self.ze_connection.target_system,
             target_component=self.ze_connection.target_component,
