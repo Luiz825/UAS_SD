@@ -1,26 +1,32 @@
-import learning as ln
 import drone_class as dc
 import asyncio
 import sys
+import time
 
-async def main():
+async def main(drone):
     loop = asyncio.get_event_loop()
+    
 
-    await asyncio.gather(r.log_test(time_out_sec=24, loop_time_min=2), loop.run_in_executor(None, m.vel_or_waypoint_mv, 5, 10))
+    await asyncio.gather(
+        drone.log_test()
+    )
 
 # this is testing grounds for different paths and options
 #a.mode_activate('GUIDED')
 if __name__ == '__main__':
+    time.sleep(2)
     with open("/media/cece/DuelData/academic/SDSU/SP2025/COMPE492/STORK_TEST.txt", "w") as f:
         # Redirect stdout to the file
         original_stdout = sys.stdout  # Save original stdout
         sys.stdout = f
 
         print("This goes to the file")
-               
-        print(ls.wait_4_msg("HEARTBEAT", block=True))
+        
+        drone = dc.Drone(10) 
 
-        asyncio.run(main())
+        print(drone.wait_4_msg("HEARTBEAT", block=True))
+
+        asyncio.run(main(drone))
 
         sys.stdout = original_stdout  # Restore stdout
 

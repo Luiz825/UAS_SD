@@ -148,26 +148,36 @@ class Drone:
         await a.to_thread(self.settle_down)
         await a.sleep(2)
     
-    async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10):
+    async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
         ## LOG DATA ON THE POS ##
         if not os.path.isfile(filename):
             with open(filename, mode = "w", newline = "") as file:
-                scribe = csv.writer(file)
-                scribe.writerow(["Timestamp", "Timelapse", "Distance"])
+                scribe = csv.writer(file)                
+                if not conn:
+                    scribe.writerow(["Timestamp", "Timelapse", "Distance"]) 
+                else:
+                    scribe.writerow(["Timestamp", "Timelapse"]) 
         
         # will only allow a time of ten minutes of recording data
         with open(filename, mode = "a", newline = "") as file:
             scribe = csv.writer(file)
             start_ = time.time()
             while ((time.time() - start_) / 60) < loop_time_min:
-                now = datetime.now()                                           
-                tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
-                if tm == self.t_sess:
-                    break
-                timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
-                pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
-                scribe.writerow([timestamp, tm, pos])
-
+                now = datetime.now()             
+                if not conn:
+                    tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
+                    if tm == self.t_sess:
+                        break
+                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+                    pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
+                    scribe.writerow([timestamp, tm, pos])
+                else:
+                    tm, msg = await a.to_thread(self.wait_4_msg("HEARTBEAT", time_out_sess=self.t_sess, attempts=3))
+                    if tm == self.t_sess:
+                        print("Not talking!")
+                        break
+                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")                    
+                    scribe.writerow([timestamp, tm])   
                 file.flush()
                 await a.sleep(3)
     
