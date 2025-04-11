@@ -1,4 +1,3 @@
-import listen as ls
 import drone_class as dc
 import asyncio
 import sys
@@ -38,7 +37,6 @@ if __name__ == '__main__':
         print(ls.wait_4_msg("HEARTBEAT", block=True))
 
         asyncio.run(main())
-
         sys.stdout = original_stdout  # Restore stdout
         print(f"done or did nt work lol")
                 

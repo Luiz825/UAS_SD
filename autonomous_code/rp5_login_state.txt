@@ -1,6 +1,0 @@
-Activate drone detection! :0\nThu 27 Mar 2025 04:26:13 PM PDT
-waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 04:26:14 PM PDT
-waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 04:26:15 PM PDT
-waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 04:26:16 PM PDT
-waiting for /dev/ttyUSB0...\nThu 27 Mar 2025 04:26:17 PM PDT
-Was not able to find /dev/ttyUSB0 sry :(\nThu 27 Mar 2025 04:26:18 PM PDT

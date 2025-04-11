@@ -30,11 +30,16 @@ class Drone:
             t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", time_out_sess = self.t_sess, attempts = 2)
             if msg_stat and t_stat <= self.t_sess:
                 if msg_stat.battery_remaining == -1: 
-                    print("Battery info unavailable :<")
+                    now = datetime.now()
+                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+                    print(f"Battery info unavailable :< {timestamp}")
                 else:                        
                     self.battery = msg_stat.battery_remaining                      
                 self.prev_qual = self.conn_qual                                         
-                self.conn_qual = msg_stat.drop_rate_comm / 10 #in %                               
+                self.conn_qual = msg_stat.drop_rate_comm / 10 #in %   
+            else:
+                if msg_stat == None:
+                    self.conn_qual = 100                
             await a.sleep(1)           
 
     async def grab_mission_stat(self):
@@ -155,7 +160,7 @@ class Drone:
             scribe = csv.writer(file)
             start_ = time.time()
             while ((time.time() - start_) / 60) < loop_time_min:
-                now = datetime.now()
+                now = datetime.now()                                           
                 tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
                 if tm == self.t_sess:
                     break
@@ -191,6 +196,10 @@ class Drone:
                 self.mode_activate(self.mode)
                 mode = self.mode
             await a.sleep(0.1) 
+    
+    async def gyro_state_awarness(self):
+        while self.active:
+
 
     def wait_4_msg(self, str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", 
                                            "HOME_POSITION", "ATTITUDE", "SYS_STATUS", "TIMESYNC", 
