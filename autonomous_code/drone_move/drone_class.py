@@ -33,7 +33,7 @@ class Drone:
             if msg_stat and t_stat <= self.t_sess:
                 if msg_stat.battery_remaining == -1: 
                     now = datetime.now()
-                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+                    timestamp = now.strftime('%Y/%m/%d %H:%M:%S')
                     print(f"Battery info unavailable :< {timestamp}")
                 else:                        
                     self.battery = msg_stat.battery_remaining                      
