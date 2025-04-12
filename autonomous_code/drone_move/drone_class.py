@@ -116,7 +116,7 @@ class Drone:
                 if msg:
                     if msg.seq == current_seq + 1:
                         frame, x, y, z = await self.waypoint_queue.get()
-                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, {z/1000}\n at at {now.strftime("%Y-%m-%d %H:%M:%S")}")                    
+                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, {z/1000}\n at at {now.strftime('%Y-%m-%d %H:%M:%S')}")                    
                         current_seq = msg.seq
             elif self.mission and self.waypoint_queue.empty():
                 self.mode = "GUIDED"
@@ -132,8 +132,8 @@ class Drone:
                 continue           
             avg_qual = (avg_qual + self.prev_qual + self.conn_qual) / 3
             now = datetime.now()
-            print(f"Battery: {self.battery}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
-            print(f"Connection Quality: {avg_qual}% at {now.strftime("%Y-%m-%d %H:%M:%S")}")
+            print(f"Battery: {self.battery}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"Connection Quality: {avg_qual}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")
             if (self.conn_qual > 40 and avg_qual > 40):
                 iter = iter + 1                    
                 if (iter == 10):
@@ -228,7 +228,8 @@ class Drone:
                                            "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"], 
                                            block = False, time_out_sess = None, attempts = 4):    
     ## WAIT FOR A MESSAGE FOR ONE CYCLE OR JUST UNTIL  ##
-    #time_out_sess is for total time but for the rp5 its gonna be in ticks so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4    
+    #time_out_sess is for total time but for the rp5 its gonna be in ticks 
+    #so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4    
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
             return msg
