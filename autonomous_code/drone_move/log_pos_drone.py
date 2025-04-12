@@ -7,7 +7,7 @@ async def main(drone):
     loop = asyncio.get_event_loop()    
 
     await asyncio.gather(
-        drone.log_test(loop_time_sess=30) #30 minutes
+        drone.log_test_time_ed(loop_time_sess=30) #30 minutes
     )
 
 # this is testing grounds for different paths and options
@@ -28,7 +28,7 @@ if __name__ == '__main__':
         asyncio.run(main(drone))
 
         sys.stdout = original_stdout  # Restore stdout
-
+        f.flush()
         f.close() 
     
     print(f"done or did nt work lol")

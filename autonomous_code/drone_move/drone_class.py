@@ -150,7 +150,49 @@ class Drone:
         await a.to_thread(self.settle_down)
         await a.sleep(2)
     
-    async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
+    async def log_test_pigpio_ed(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
+        ## LOG DATA ON THE POS ##
+        # the loop time is in minutes
+        if not os.path.isfile(filename):
+            with open(filename, mode = "w", newline = "") as file:
+                scribe = csv.writer(file)                
+                if not conn:
+                    scribe.writerow(["Timestamp", "Timelapse", "Distance"]) 
+                else:
+                    scribe.writerow(["Timestamp", "Timelapse", "Data"]) 
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system,
+            self.ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,
+            mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU,  # message id for RAW_IMU
+            20000,  # 20,000 µs = 50 Hz
+            0, 0, 0, 0, 0
+        )
+        # will only allow a time of ten minutes (default) of recording data
+        with open(filename, mode = "a", newline = "") as file:
+            scribe = csv.writer(file)
+            start_ = self.pi.get_current_tick()
+            while (((self.pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
+                now = datetime.now()             
+                if not conn:
+                    tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
+                    if tm == self.t_sess:
+                        break
+                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+                    pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
+                    scribe.writerow([timestamp, tm, pos])
+                else:
+                    tm, msg = await a.to_thread(self.wait_4_msg("RAW_IMU", time_out_sess=self.t_sess, attempts=3))
+                    if tm == self.t_sess:
+                        print(f"Not talking @ {timestamp}!")
+                        break
+                    timestamp = now.strftime("%Y/%m/%d %H:%M:%S")                    
+                    scribe.writerow([timestamp, tm, msg])   
+                file.flush()
+                await a.sleep(3)
+
+    async def log_test_time_ed(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
         ## LOG DATA ON THE POS ##
         # the loop time is in minutes
         if not os.path.isfile(filename):
@@ -173,8 +215,8 @@ class Drone:
         # will only allow a time of ten minutes (default) of recording data
         with open(filename, mode = "a", newline = "") as file:
             scribe = csv.writer(file)
-            start_ = self.pi.get_current_tick()
-            while (((self.pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
+            start_ = time.time()
+            while ((time.time() - start_)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
                     tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
