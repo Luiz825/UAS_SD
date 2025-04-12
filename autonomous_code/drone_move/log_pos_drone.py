@@ -4,8 +4,7 @@ import sys
 import time
 
 async def main(drone):
-    loop = asyncio.get_event_loop()
-    
+    loop = asyncio.get_event_loop()    
 
     await asyncio.gather(
         drone.log_test(loop_time_sess=30) #30 minutes
@@ -15,7 +14,7 @@ async def main(drone):
 #a.mode_activate('GUIDED')
 if __name__ == '__main__':
     time.sleep(2)
-    with open("/media/cece/DuelData/academic/SDSU/SP2025/COMPE492/STORK_TEST.txt", "w") as f:
+    with open("/media/cece/DuelData/academic/SDSU/SP2025/COMPE492/STORK_TEST_LOG_FAILS.txt", "w") as f:
         # Redirect stdout to the file
         original_stdout = sys.stdout  # Save original stdout
         sys.stdout = f
