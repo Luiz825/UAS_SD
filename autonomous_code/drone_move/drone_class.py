@@ -227,7 +227,8 @@ class Drone:
             scribe = csv.writer(file)
             start_ = time.time()
             while ((time.time() - start_)/60) < loop_time_min:
-                now = datetime.now()             
+                now = datetime.now()    
+                timestamp = now.strftime("%Y/%m/%d %H:%M:%S")          
                 if not conn:
                     tm, msg = await a.to_thread(self.wait_4_msg,"LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
