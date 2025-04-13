@@ -276,14 +276,14 @@ class Drone:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
             return msg
         else:                    
-            temp = time_out_sess * 1e6 / attempts
-            start_ = self.pi.get_current_tick()
-            while (self.pi.get_current_tick() - start_) < time_out_sess * 1e6:
+            temp = time_out_sess/ attempts
+            start_ = time.time()
+            while (time.time() - start_) < time_out_sess:
                 msg = self.ze_connection.recv_match(type = str_type, blocking = False, timeout = temp)
                 if msg is None:
                     continue
                 elif msg:                
-                    return (self.pi.get_current_tick() - start_)/1e6, msg
+                    return (time.time() - start_), msg
                 time.sleep(0.1)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved
