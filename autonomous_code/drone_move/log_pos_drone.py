@@ -14,7 +14,7 @@ async def main(drone):
 #a.mode_activate('GUIDED')
 if __name__ == '__main__':
     time.sleep(2)
-    with open("/media/cece/DuelData/academic/SDSU/SP2025/COMPE492/STORK_TEST_LOG_FAILS.txt", "w") as f:
+    with open("/home/pi/STORK_TEST_LOG_FAILS.txt", "w") as f:
         # Redirect stdout to the file
         original_stdout = sys.stdout  # Save original stdout
         sys.stdout = f
