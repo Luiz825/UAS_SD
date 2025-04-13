@@ -212,6 +212,16 @@ class Drone:
             0, 0, 0, 0, 0
         )
         
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system,
+            self.ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,  # Confirmation
+            mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS,  # <- Changed to SYS_STATUS
+            22000,  # Interval in microseconds (22,000 µs = ~45.45 Hz)
+            0, 0, 0, 0, 0
+        )
+
         # will only allow a time of ten minutes (default) of recording data
         with open(filename, mode = "a", newline = "") as file:
             scribe = csv.writer(file)
