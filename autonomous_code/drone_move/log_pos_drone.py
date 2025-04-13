@@ -23,7 +23,7 @@ if __name__ == '__main__':
         
         drone = dc.Drone(10) 
 
-        print(drone.wait_4_msg("HEARTBEAT", block=True))
+        print(drone.wait_4_msg(str_type="HEARTBEAT", block=True))
 
         asyncio.run(main(drone))
 
