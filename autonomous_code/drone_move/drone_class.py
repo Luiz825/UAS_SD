@@ -219,14 +219,14 @@ class Drone:
             while ((time.time() - start_)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
-                    tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
+                    tm, msg = await a.to_thread(self.wait_4_msg,"LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         break
                     timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
                     pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
                     scribe.writerow([timestamp, tm, pos])
                 else:
-                    tm, msg = await a.to_thread(self.wait_4_msg("RAW_IMU", time_out_sess=self.t_sess, attempts=3))
+                    tm, msg = await a.to_thread(self.wait_4_msg,"RAW_IMU", time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         print(f"Not talking @ {timestamp}!")
                         break
