@@ -16,13 +16,100 @@ class Vehicle:
         self.z=0    
         self.lat=0
         self.lon=0
-        self.alt=0    
+        self.alt=0          
         self.battery=100
         self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)
         self.pi = pigpio.pi()
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         self.prev_qual = 0   
-        self.mode      
+        self.mode = "STABILIZE"   
+        self.active = True   
+        self.waypoint_queue = a.Queue()      
+        self.mission = False
+        self.current_waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
+        self.t_sess = t
+    
+    async def grab_mission_stat(self):
+        ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
+        while self.active:
+            if self.mode == "MANUAL":
+                await a.sleep(0.01)
+                continue  
+            self.ze_connection.mav.mission_request_list_send(
+                target_system=self.ze_connection.target_system,
+                target_component=self.ze_connection.target_component
+            )
+            await a.sleep(0.1)
+            msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
+            if msg_mission and msg_mission.count > 1:                
+                cnt = msg_mission.count
+                print(f"Recieving #{cnt} mission waypoints!")
+                for i in range(cnt):
+                    self.ze_connection.mav.mission_request_int_send(
+                        target_system=self.ze_connection.target_system,
+                        target_component=self.ze_connection.target_component,
+                        seq=i
+                    )   
+                    await a.sleep(0.1)
+                    msg_item = None
+                    print(f"Looking for waypoint {i}!")
+                    while msg_item is None:
+                        print(f"Search for item {i}")
+                        msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
+                        await a.sleep(0.1)
+                        if not self.active:
+                            print("Died in search! :O")
+                            return
+                    (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
+                    if self.current_waypoint_0 != (frame, x, y, z) and i == 0:
+                        await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
+                        self.current_waypoint_0 = (frame, x, y, z)
+                    else:
+                        print(f"Same as previous mission :)")
+                        await a.sleep(2)
+                        continue #to restart the while self.active loop in the beginning
+                    print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
+                print(f"All {cnt} items recieved!")                
+                self.mode = "AUTO"
+                self.ze_connection.mav.command_long_send(
+                    self.ze_connection.target_system,
+                    self.ze_connection.target_component,
+                    mavutil.mavlink.MAV_CMD_MISSION_START,
+                    0, 0, 0, 0, 0, 0, 0, 0)
+                msg_mission_start = None
+                while msg_mission_start is None:
+                    msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
+                    print(msg_mission_start)
+                    await a.sleep(0.1)
+                self.mission = True
+                print("Mission started")
+            else:
+                print(f"Nothing new/No new mission :<")
+            await a.sleep(0.5)   
+
+    async def mission_exec(self):
+        ## EXECUTE MISSION AND WAIT UNTIL DONE ##
+        current_seq = 0
+        while self.active:   
+            if self.mode == "MANUAL":
+                await a.sleep(0.01)
+                continue   
+            print(f"Mission execution: {current_seq}")
+            now = datetime.now()
+            if self.mission and not self.waypoint_queue.empty(): 
+                while self.mode != "AUTO":
+                    await a.sleep(0.5)
+                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
+                if msg:
+                    if msg.seq == current_seq + 1:
+                        frame, x, y, z = await self.waypoint_queue.get()
+                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, \
+                              {z/1000} at {now.strftime('%Y-%m-%d %H:%M:%S')}")                    
+                        current_seq = msg.seq
+            elif self.mission and self.waypoint_queue.empty():
+                self.mode = "GUIDED"
+                self.mission = False
+            await a.sleep(1)
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
@@ -66,29 +153,31 @@ class Vehicle:
 
 
     async def update_NED(self):
-        ## HOLD UNTIL POS REACHED ##           
-        rel = "LOCAL_POSITION_NED"         
-        msg = self.wait_4_msg(rel, block=True)
-        if msg:
-            self.x, self.y, self.z = msg.x, msg.y, msg.z        
-        print(f"Current Position: x = {self.x:.2f} m, y = {self.y:.2f} m, z = {self.z:.2f} m")                
+        ## HOLD UNTIL POS REACHED ##   
+        while self.active:        
+            rel = "LOCAL_POSITION_NED"         
+            msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            if msg:
+                self.x, self.y, self.z = msg.x, msg.y, msg.z        
+            print(f"Current Position: x = {self.x:.2f} m, y = {self.y:.2f} m, z = {self.z:.2f} m")                
         
     async def update_GPS(self):
-        ## HOLD UNTIL POS REACHED ##         
-        rel = "GLOBAL_POSITION_INT"        
-        # Wait for initial position
-        msg = self.wait_4_msg(rel, block=True)
-        if msg:
-            self.lat = msg.lat / 1e7
-            self.lon = msg.lon / 1e7
-            self.alt = msg.alt / 1000.0 
-        print(f"Current Position: x = {self.lan:.2f} m, y = {self.lon:.2f} m, z = {self.alt:.2f} m")        
-        
+        ## HOLD UNTIL POS REACHED ##     
+        while self.active:            
+            rel = "GLOBAL_POSITION_INT"        
+            # Wait for initial position
+            msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            if msg:
+                self.lat = msg.lat / 1e7
+                self.lon = msg.lon / 1e7
+                self.alt = msg.alt / 1000.0 
+            print(f"Current Coordinate: lat = {self.lat:.2f} m, lon = {self.lon:.2f} m, alt = {self.alt:.2f} m")     
+
     async def change_mode(self):
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
         while True:
-            msg_hb = await a.to_thread(super().wait_4_msg, str_type="HEARTBEAT")
+            msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
             hb_mode = None
             if msg_hb:
                 hb_mode = msg_hb.custom_mode
@@ -101,7 +190,16 @@ class Vehicle:
     def mode_activate(self, mode_e: VALID_MODES):
         ## CAHNGE THE MODE BASED ON POSSIBLE INPUTS ##
         # Get mode ID for GUIDED
-        mode_id = super().ze_connection.mode_mapping()[mode_e]
+        mode_id = self.ze_connection.mode_mapping()[mode_e]
         # Send mode change request
-        super().ze_connection.set_mode(mode_id)
+        self.ze_connection.set_mode(mode_id)
         print(f"Mode changed to {mode_e}!") 
+
+    def set_wrist(self, arm_disarm):
+        ## SET THE DRONE TO ARMED OR DISARMED ##
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system, 
+            self.ze_connection.target_component, 
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
+            0, arm_disarm, 0, 0, 0, 0, 0, 0)        
+        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True)) 
