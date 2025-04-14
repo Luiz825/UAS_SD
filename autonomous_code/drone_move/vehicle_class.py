@@ -6,7 +6,11 @@ import pigpio
 import time
 
 class Vehicle:
-    def __init__(self, conn, t=5):
+    VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
+                          "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"]
+    VALID_MODES = Literal["GUIDED", "LAND", "RTL", "AUTO", "MANUAL"]
+
+    def __init__(self, conn='udp:localhost:14551', t=5):
         self.x=0
         self.y=0
         self.z=0    
@@ -14,17 +18,19 @@ class Vehicle:
         self.lon=0
         self.alt=0    
         self.battery=100
-        self.ze_connection=conn
+        self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)
         self.pi = pigpio.pi()
         self.conn_qual = 0 # the lower the better meaning no packets lost 
-        self.prev_qual = 0 
+        self.prev_qual = 0   
+        self.mode      
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
         while self.active:  
             if self.mode == "MANUAL":
                 continue              
-            t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", time_out_sess = self.t_sess, attempts = 2)
+            t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", 
+                                                 time_out_sess = self.t_sess, attempts = 2)
             if msg_stat and t_stat <= self.t_sess:
                 if msg_stat.battery_remaining == -1:                     
                     print(f"Battery info unavailable :< ")
@@ -38,9 +44,7 @@ class Vehicle:
                     self.conn_qual = 100                
             await a.sleep(1)     
 
-    def wait_4_msg(self, str_type: Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
-                                           "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"], 
-                                           block = False, time_out_sess = None, attempts = 4):    
+    def wait_4_msg(self, str_type: VALID_MESSAGES, block = False, time_out_sess = None, attempts = 4):    
     ## WAIT FOR A MESSAGE FOR ONE CYCLE OR JUST UNTIL  ##
     #time_out_sess is for total time but for the rp5 its gonna be in ticks 
     #so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4    
@@ -80,6 +84,24 @@ class Vehicle:
             self.alt = msg.alt / 1000.0 
         print(f"Current Position: x = {self.lan:.2f} m, y = {self.lon:.2f} m, z = {self.alt:.2f} m")        
         
- 
+    async def change_mode(self):
+        ## CHANGE THE MODE OF THE DRONE ##
+        mode = self.mode
+        while True:
+            msg_hb = await a.to_thread(super().wait_4_msg, str_type="HEARTBEAT")
+            hb_mode = None
+            if msg_hb:
+                hb_mode = msg_hb.custom_mode
+            await a.sleep(0.1)
+            if mode != self.mode or (hb_mode != None and hb_mode != self.mode):
+                self.mode_activate(self.mode)
+                mode = self.mode
+            await a.sleep(0.1) 
 
-
+    def mode_activate(self, mode_e: VALID_MODES):
+        ## CAHNGE THE MODE BASED ON POSSIBLE INPUTS ##
+        # Get mode ID for GUIDED
+        mode_id = super().ze_connection.mode_mapping()[mode_e]
+        # Send mode change request
+        super().ze_connection.set_mode(mode_id)
+        print(f"Mode changed to {mode_e}!") 

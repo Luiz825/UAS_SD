@@ -9,6 +9,9 @@ import os
 import csv
 
 class Drone(vc.Vehicle):
+    VALID_MESSAGES = vc.Vehicle.VALID_MESSAGES + Literal[""]
+    VALID_MODES = vc.Vehicle.VALID_MODES + Literal[ "STABILIZE", "LOITER",]
+
     def __init__(self, conn, t=10):
         super().__init__(conn, t)
         self.waypoint_queue = a.Queue()      
@@ -25,20 +28,21 @@ class Drone(vc.Vehicle):
         ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
         while self.active:
             if self.mode == "MANUAL":
+                await a.sleep(0.01)
                 continue  
-            self.ze_connection.mav.mission_request_list_send(
-                target_system=self.ze_connection.target_system,
-                target_component=self.ze_connection.target_component
+            super().ze_connection.mav.mission_request_list_send(
+                target_system=super().ze_connection.target_system,
+                target_component=super().ze_connection.target_component
             )
             await a.sleep(0.1)
-            msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
+            msg_mission = await a.to_thread(super().wait_4_msg, str_type="MISSION_COUNT")
             if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
                 print(f"Recieving #{cnt} mission waypoints!")
                 for i in range(cnt):
-                    self.ze_connection.mav.mission_request_int_send(
-                        target_system=self.ze_connection.target_system,
-                        target_component=self.ze_connection.target_component,
+                    super().ze_connection.mav.mission_request_int_send(
+                        target_system=super().ze_connection.target_system,
+                        target_component=super().ze_connection.target_component,
                         seq=i
                     )   
                     await a.sleep(0.1)
@@ -46,7 +50,7 @@ class Drone(vc.Vehicle):
                     print(f"Looking for waypoint {i}!")
                     while msg_item is None:
                         print(f"Search for item {i}")
-                        msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
+                        msg_item = await a.to_thread(super().wait_4_msg, str_type = "MISSION_ITEM_INT")
                         await a.sleep(0.1)
                         if not self.active:
                             print("Died in search! :O")
@@ -57,19 +61,19 @@ class Drone(vc.Vehicle):
                         self.current_waypoint_0 = (frame, x, y, z)
                     else:
                         print(f"Same as previous mission :)")
-                        await a.sleep(5)
+                        await a.sleep(2)
                         continue #to restart the while self.active loop in the beginning
                     print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
                 print(f"All {cnt} items recieved!")                
                 self.mode = "AUTO"
-                self.ze_connection.mav.command_long_send(
-                    self.ze_connection.target_system,
-                    self.ze_connection.target_component,
+                super().ze_connection.mav.command_long_send(
+                    super().ze_connection.target_system,
+                    super().ze_connection.target_component,
                     mavutil.mavlink.MAV_CMD_MISSION_START,
                     0, 0, 0, 0, 0, 0, 0, 0)
                 msg_mission_start = None
                 while msg_mission_start is None:
-                    msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
+                    msg_mission_start= await a.to_thread(super().wait_4_msg, "COMMAND_ACK")
                     print(msg_mission_start)
                     await a.sleep(0.1)
                 self.mission = True
@@ -81,19 +85,21 @@ class Drone(vc.Vehicle):
     async def mission_exec(self):
         ## EXECUTE MISSION AND WAIT UNTIL DONE ##
         current_seq = 0
-        while self.active:
+        while self.active:   
             if self.mode == "MANUAL":
-                continue  
+                await a.sleep(0.01)
+                continue   
             print(f"Mission execution: {current_seq}")
             now = datetime.now()
             if self.mission and not self.waypoint_queue.empty(): 
                 while self.mode != "AUTO":
                     await a.sleep(0.5)
-                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
+                msg = await a.to_thread(super().wait_4_msg, str_type="MISSION_CURRENT")
                 if msg:
                     if msg.seq == current_seq + 1:
                         frame, x, y, z = await self.waypoint_queue.get()
-                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, {z/1000}\n at at {now.strftime('%Y-%m-%d %H:%M:%S')}")                    
+                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, \
+                              {z/1000} at {now.strftime('%Y-%m-%d %H:%M:%S')}")                    
                         current_seq = msg.seq
             elif self.mission and self.waypoint_queue.empty():
                 self.mode = "GUIDED"
@@ -102,21 +108,22 @@ class Drone(vc.Vehicle):
     
     async def land_question(self):
         ## CHECK IF NEED TO LAND ##
-        avg_qual = self.conn_qual
+        avg_qual = super().conn_qual
         iter = 0
         while self.active:   
             if self.mode == "MANUAL":
+                await a.sleep(0.01)
                 continue           
-            avg_qual = (avg_qual + self.prev_qual + self.conn_qual) / 3
+            avg_qual = (avg_qual + super().prev_qual + super().conn_qual) / 3
             now = datetime.now()
-            print(f"Battery: {self.battery}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"Connection Quality: {avg_qual}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")
-            if (self.conn_qual > 40 and avg_qual > 40):
+            print(f"Battery: {super().battery}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")           
+            print(f"Connection Quality: {avg_qual}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")            
+            if (super().conn_qual > 40 and avg_qual > 40):
                 iter = iter + 1                    
                 if (iter == 10):
                     print(f"Comms issue!")
                     self.active = False 
-            elif self.battery < 50:
+            elif super().battery < 50:
                 self.active = False
                 print(f"Battery low!")
             else:
@@ -137,13 +144,22 @@ class Drone(vc.Vehicle):
                     scribe.writerow(["Timestamp", "Timelapse", "Distance"]) 
                 else:
                     scribe.writerow(["Timestamp", "Timelapse", "Data"]) 
-        self.ze_connection.mav.command_long_send(
-            self.ze_connection.target_system,
-            self.ze_connection.target_component,
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system,
+            super().ze_connection.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
             0,
             mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU,  # message id for RAW_IMU
             20000,  # 20,000 µs = 50 Hz
+            0, 0, 0, 0, 0
+        )
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system,
+            super().ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,  # Confirmation
+            mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS,  # <- Changed to SYS_STATUS
+            22000,  # Interval in microseconds (22,000 µs = ~45.45 Hz)
             0, 0, 0, 0, 0
         )
         # will only allow a time of ten minutes (default) of recording data
@@ -153,14 +169,16 @@ class Drone(vc.Vehicle):
             while (((self.pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
-                    tm, msg = await a.to_thread(self.wait_4_msg("LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3))
+                    tm, msg = await a.to_thread(super().wait_4_msg,"LOCAL_POSITION_NED", 
+                                                time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         break
                     timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
                     pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
                     scribe.writerow([timestamp, tm, pos])
                 else:
-                    tm, msg = await a.to_thread(self.wait_4_msg,"RAW_IMU", time_out_sess=self.t_sess, attempts=3)
+                    tm, msg = await a.to_thread(super().wait_4_msg,"RAW_IMU", 
+                                                time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         print(f"Not talking @ {timestamp}!")
                         break
@@ -179,9 +197,9 @@ class Drone(vc.Vehicle):
                     scribe.writerow(["Timestamp", "Timelapse", "Distance"]) 
                 else:
                     scribe.writerow(["Timestamp", "Timelapse", "Data", "Health"]) 
-        self.ze_connection.mav.command_long_send(
-            self.ze_connection.target_system,
-            self.ze_connection.target_component,
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system,
+            super().ze_connection.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
             0,
             mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU,  # message id for RAW_IMU
@@ -189,9 +207,9 @@ class Drone(vc.Vehicle):
             0, 0, 0, 0, 0
         )
         
-        self.ze_connection.mav.command_long_send(
-            self.ze_connection.target_system,
-            self.ze_connection.target_component,
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system,
+            super().ze_connection.target_component,
             mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
             0,  # Confirmation
             mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS,  # <- Changed to SYS_STATUS
@@ -207,18 +225,21 @@ class Drone(vc.Vehicle):
                 now = datetime.now()    
                 timestamp = now.strftime("%Y/%m/%d %H:%M:%S")          
                 if not conn:
-                    tm, msg = await a.to_thread(self.wait_4_msg,"LOCAL_POSITION_NED", time_out_sess=self.t_sess, attempts=3)
+                    tm, msg = await a.to_thread(super().wait_4_msg,"LOCAL_POSITION_NED", 
+                                                time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         break
                     timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
                     pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
                     scribe.writerow([timestamp, tm, pos])
                 else:
-                    tm_raw, msg_raw = await a.to_thread(self.wait_4_msg,"RAW_IMU", time_out_sess=self.t_sess, attempts=3)
+                    tm_raw, msg_raw = await a.to_thread(super().wait_4_msg,"RAW_IMU", 
+                                                        time_out_sess=self.t_sess, attempts=3)
                     if tm_raw == self.t_sess:
                         print(f"Not talking @ {timestamp}!")
                         break
-                    tm, msg = await a.to_thread(self.wait_4_msg,"SYS_STATUS", time_out_sess=self.t_sess, attempts=3)
+                    tm, msg = await a.to_thread(super().wait_4_msg,"SYS_STATUS", 
+                                                time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         print(f"Not talking @ {timestamp}!")
                         break
@@ -231,6 +252,7 @@ class Drone(vc.Vehicle):
         ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
         while self.active:
             if self.mode == "MANUAL":
+                await a.sleep(0.01)
                 continue  
             if self.drop:
                 await a.to_thread(self.move_servo, inst, 1500)
@@ -240,25 +262,13 @@ class Drone(vc.Vehicle):
                 self.drop = False
             await a.sleep(0.1)
 
-    async def change_mode(self):
-        ## CHANGE THE MODE OF THE DRONE ##
-        mode = self.mode
-        while True:
-            msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
-            hb_mode = None
-            if msg_hb:
-                hb_mode = msg_hb.custom_mode
-            await a.sleep(0.1)
-            if mode != self.mode or (hb_mode != None and hb_mode != self.mode):
-                self.mode_activate(self.mode)
-                mode = self.mode
-            await a.sleep(0.1) 
+    
     
     # async def gyro_state_awarness(self):
-    #     while self.active:
-    
+    #     while self.active:    
         
-    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, xv = None, yv = None, zv = None, yaw = None):
+    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, 
+                           xv = None, yv = None, zv = None, yaw = None):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
     ## MOVE DRONE ##
@@ -273,61 +283,59 @@ class Drone(vc.Vehicle):
         
     def waypoint_mv(self, frame, x, y, z, yaw):
         ## CHANGE THE TARGET POS TO INPUT ##
-        pos = self.wait_4_msg("LOCAL_POSITION_NED", block = True)
+        pos = super().wait_4_msg("LOCAL_POSITION_NED", block = True)
         x = pos.x if x is None else x
         y = pos.y if y is None else y
         z = 0 if z is None else z    
-        yaw = self.wait_4_msg("ATTITUDE", block = True).yaw if yaw is None else yaw
+        yaw = super().wait_4_msg("ATTITUDE", block = True).yaw if yaw is None else yaw
         
-        self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-            0, self.ze_connectionthe_connection.target_system, 
-            self.ze_connection.the_connection.target_component, 
+        super().ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+            0, super().ze_connectionthe_connection.target_system, 
+            super().ze_connection.the_connection.target_component, 
             mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
-            4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))
-               
+            4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))             
 
     def set_wrist(self, arm_disarm):
         ## SET THE DRONE TO ARMED OR DISARMED ##
-        self.ze_connection.mav.command_long_send(
-            self.ze_connection.target_system, 
-            self.ze_connection.target_component, 
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system, 
+            super().ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
             0, arm_disarm, 0, 0, 0, 0, 0, 0)        
-        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))  
+        print(super().wait_4_msg(str_type="COMMAND_ACK", block = True))  
 
-    def mode_activate(self, mode_e: Literal["GUIDED", "LAND", "STABILIZE", "MANUAL", 
-                                            "LOITER", "RTL", "AUTO", "MANUAL"]):
-        ## CAHNGE THE MODE BASED ON POSSIBLE INPUTS ##
-        # Get mode ID for GUIDED
-        mode_id = self.ze_connection.mode_mapping()[mode_e]
-        # Send mode change request
-        self.ze_connection.set_mode(mode_id)
-        print(f"Mode changed to {mode_e}!")   
+      
 
-    def settle_down(self):
+    def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
+        # tolerance default is 50mm
         self.mode = "RTL"
-          
+        target_x, target_y, target_z = 0, 0, 0
+        while not abs(super().x - target_x) < tol and abs(super().y - target_y) < tol and abs(super().z - target_z) < tol:
+            #tolerance same for all         
+            if self.mode != "LAND" and super().battery < 10:
+                self.mode = "LAND"
+                target_x, target_y = super().x, super().y
         self.set_wrist(0)
         self.mode = "STABILIZE"
-        print(self.wait_4_msg(str_type="HEARTBEAT", block=True))
+        print(super().wait_4_msg(str_type="HEARTBEAT", block=True))
         
     def to_infinity_and_beyond(self, h, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
         self.mode = "GUIDED"
         self.set_wrist(1)
-        self.the_connection.mav.command_long_send(
-            self.ze_connection.target_system, 
-            self.ze_connection.target_component, 
+        super().ze_connection.mav.command_long_send(
+            super().ze_connection.target_system, 
+            super().ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 
             0, 0, 0, 0, yaw, 0, 0, h)    
-        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))          
+        print(super().wait_4_msg(str_type="COMMAND_ACK", block = True))          
 
     def move_servo(self, inst, pwm):
         ## MOVE THE MOTOR AT INST A VAL OF PWM ##
-        self.ze_connection.mav.command_long_send(
-            target_system=self.ze_connection.target_system,
-            target_component=self.ze_connection.target_component,
+        super().ze_connection.mav.command_long_send(
+            target_system=super().ze_connection.target_system,
+            target_component=super().ze_connection.target_component,
             command=mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
             confirmation=0,
             param1=inst,
