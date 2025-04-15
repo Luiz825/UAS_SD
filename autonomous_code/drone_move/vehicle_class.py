@@ -43,8 +43,31 @@ class Vehicle:
             msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
             if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
+                self.ze_connection.mav.mission_request_int_send(
+                        target_system=self.ze_connection.target_system,
+                        target_component=self.ze_connection.target_component,
+                        seq=0
+                    )   
+                await a.sleep(0.1)
+                msg_item = None
+                print(f"Looking for first waypoint!")
+                while msg_item is None:
+                    print(f"Search for first item")
+                    msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
+                    await a.sleep(0.1)
+                    if not self.active:
+                        print("Died in search! :O")
+                        return
+                (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
+                if self.current_waypoint_0 != (frame, x, y, z):
+                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
+                    self.current_waypoint_0 = (frame, x, y, z)
+                else:
+                    print(f"Same as previous mission :)")
+                    await a.sleep(2)
+                    continue #to restart the while self.active loop in the beginning
                 print(f"Recieving #{cnt} mission waypoints!")
-                for i in range(cnt):
+                for i in range(1, cnt):
                     self.ze_connection.mav.mission_request_int_send(
                         target_system=self.ze_connection.target_system,
                         target_component=self.ze_connection.target_component,
@@ -60,14 +83,8 @@ class Vehicle:
                         if not self.active:
                             print("Died in search! :O")
                             return
-                    (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
-                    if self.current_waypoint_0 != (frame, x, y, z) and i == 0:
-                        await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                        self.current_waypoint_0 = (frame, x, y, z)
-                    else:
-                        print(f"Same as previous mission :)")
-                        await a.sleep(2)
-                        continue #to restart the while self.active loop in the beginning
+                    (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)                    
+                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
                     print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
                 print(f"All {cnt} items recieved!")                
                 self.mode = "AUTO"
@@ -128,7 +145,9 @@ class Vehicle:
                 self.conn_qual = msg_stat.drop_rate_comm / 10 #in %   
             else:
                 if msg_stat == None:
-                    self.conn_qual = 100                
+                    self.conn_qual = 100    
+            self.conn_qual = self.ze_connection.packet_loss()
+            self.prev_qual = self.conn_qual            
             await a.sleep(1)     
 
     def wait_4_msg(self, str_type: VALID_MESSAGES, block = False, time_out_sess = None, attempts = 4):    
@@ -160,6 +179,7 @@ class Vehicle:
             if msg:
                 self.x, self.y, self.z = msg.x, msg.y, msg.z        
             print(f"Current Position: x = {self.x:.2f} m, y = {self.y:.2f} m, z = {self.z:.2f} m")                
+            await a.sleep(0.1)
         
     async def update_GPS(self):
         ## HOLD UNTIL POS REACHED ##     
@@ -171,7 +191,8 @@ class Vehicle:
                 self.lat = msg.lat / 1e7
                 self.lon = msg.lon / 1e7
                 self.alt = msg.alt / 1000.0 
-            print(f"Current Coordinate: lat = {self.lat:.2f} m, lon = {self.lon:.2f} m, alt = {self.alt:.2f} m")     
+            print(f"Current Coordinate: lat = {self.lat:.2f} m, lon = {self.lon:.2f} m, alt = {self.alt:.2f} m")    
+            await a.sleep(0.1)
 
     async def change_mode(self):
         ## CHANGE THE MODE OF THE DRONE ##

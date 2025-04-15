@@ -3,8 +3,8 @@ import asyncio as a
 from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
-import time
-import pigpio
+# import time
+# import pigpio
 import os
 import csv
 import math
@@ -38,12 +38,12 @@ class Drone(vc.Vehicle):
                 elif (super().pi.get_current_tick() - start_) > 2500:
                     print(f"Comms issue!")
                     super().active = False 
-                    start_
+                    start_ = 0
+                else:
+                    start_ = 0
             elif super().battery < 20:
                 super().active = False
-                print(f"Battery low!")
-            else:
-                iter = 0            
+                print(f"Battery low!")                    
             await a.sleep(1)
         print(f"Issue occured!")
         self.mission = False
@@ -117,6 +117,21 @@ class Drone(vc.Vehicle):
                 self.drop = False
             await a.sleep(0.1)
 
+    async def crash_check(self):
+        ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP ##
+        start_ = 0
+        while super().active:
+            if self.roll > 100 or self.pitch > 100:
+                if start_ is 0:
+                    start_ = super().pi.get_current_tick()
+                elif (super().pi.get_current_tick() - start_) > 300:
+                    self.active = False
+                    super().set_wrist(arm_disarm = 0)
+                    start_ = 0
+                else:
+                    start_ = 0
+            await a.sleep(0.1)
+        
     
     async def update_GYRO(self):
         while super().active:    
