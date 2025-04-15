@@ -26,13 +26,14 @@ class Vehicle:
         self.active = True   
         self.waypoint_queue = a.Queue()      
         self.mission = False
-        self.current_waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
+        self.waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
         self.t_sess = t
     
     async def grab_mission_stat(self):
         ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
         while self.active:
             if self.mode == "MANUAL":
+
                 await a.sleep(0.01)
                 continue  
             self.ze_connection.mav.mission_request_list_send(
@@ -44,9 +45,9 @@ class Vehicle:
             if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
                 msg_item = await self._grab_waypoint(0)
-                if self.current_waypoint_0 != msg_item:
+                if self.waypoint_0 != msg_item:
                     await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    self.current_waypoint_0 = msg_item
+                    self.waypoint_0 = msg_item
                 else:
                     print(f"Same as previous mission :)")
                     await a.sleep(2)
@@ -65,7 +66,7 @@ class Vehicle:
                     0, 0, 0, 0, 0, 0, 0, 0)
                 msg_mission_start = None
                 while msg_mission_start is None:
-                    msg_mission_start= await a.to_thread(self.wait_4_msg, "COMMAND_ACK")
+                    msg_mission_start= await a.to_thread(self.wait_4_msg, "MISSION_ACK")
                     print(msg_mission_start)
                     await a.sleep(0.1)
                 self.mission = True
@@ -158,7 +159,6 @@ class Vehicle:
                 time.sleep(0.1)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved      
-
 
     async def update_NED(self):
         ## HOLD UNTIL POS REACHED ##   

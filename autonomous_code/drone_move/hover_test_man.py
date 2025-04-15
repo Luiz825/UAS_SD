@@ -11,18 +11,10 @@ async def main():
     loop = asyncio.get_event_loop()    
 
     await asyncio.gather(
-        drone.change_mode(),
-        drone.check_telem(),
-        drone.crash_check(),
-        drone.grab_mission_stat(),
-        drone.mission_exec(),
-        drone.land_question(),
-        drone.payload_sequence(),
-        drone.update_GPS(),
-        drone.update_GYRO(),
-        drone.update_NED()
+        
     )
     
+
 #this will run the following plans:
 '''
     1. execute mission 

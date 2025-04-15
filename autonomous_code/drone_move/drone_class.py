@@ -117,25 +117,37 @@ class Drone(vc.Vehicle):
                 self.drop = False
             await a.sleep(0.1)
 
-    async def crash_check(self):
-        ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP ##
+    async def crash_check(self, tol = 0.5):
+        ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND##
+        # crashing land tolerance of 1/2 meter #
         start_ = 0
         while super().active:
-            if self.roll > 100 or self.pitch > 100:
+            if self.roll > 70 or self.pitch > 70:
                 if start_ is 0:
                     start_ = super().pi.get_current_tick()
                 elif (super().pi.get_current_tick() - start_) > 300:
                     self.active = False
-                    super().set_wrist(arm_disarm = 0)
+                    super().mode = "LAND"
                     start_ = 0
                 else:
                     start_ = 0
             await a.sleep(0.1)
-        
+        while (super().y - tol) > tol:
+            continue
+
+        self.master.mav.command_long_send(
+            self.master.target_system,
+            self.master.target_component,
+            mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
+            0,  # Confirmation
+            1,  # Termination ON
+            0, 0, 0, 0, 0, 0
+        )
     
     async def update_GYRO(self):
         while super().active:    
-            ## HOLD UNTIL POS REACHED ##           
+            ## HOLD UNTIL POS REACHED ##  
+            await a.sleep(0.1)         
             rel = "ATTITUDE"         
             msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
