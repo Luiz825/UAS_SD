@@ -43,47 +43,17 @@ class Vehicle:
             msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
             if msg_mission and msg_mission.count > 1:                
                 cnt = msg_mission.count
-                self.ze_connection.mav.mission_request_int_send(
-                        target_system=self.ze_connection.target_system,
-                        target_component=self.ze_connection.target_component,
-                        seq=0
-                    )   
-                await a.sleep(0.1)
-                msg_item = None
-                print(f"Looking for first waypoint!")
-                while msg_item is None:
-                    print(f"Search for first item")
-                    msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
-                    await a.sleep(0.1)
-                    if not self.active:
-                        print("Died in search! :O")
-                        return
-                (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)
-                if self.current_waypoint_0 != (frame, x, y, z):
+                msg_item = await self._grab_waypoint(0)
+                if self.current_waypoint_0 != msg_item:
                     await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    self.current_waypoint_0 = (frame, x, y, z)
+                    self.current_waypoint_0 = msg_item
                 else:
                     print(f"Same as previous mission :)")
                     await a.sleep(2)
                     continue #to restart the while self.active loop in the beginning
                 print(f"Recieving #{cnt} mission waypoints!")
                 for i in range(1, cnt):
-                    self.ze_connection.mav.mission_request_int_send(
-                        target_system=self.ze_connection.target_system,
-                        target_component=self.ze_connection.target_component,
-                        seq=i
-                    )   
-                    await a.sleep(0.1)
-                    msg_item = None
-                    print(f"Looking for waypoint {i}!")
-                    while msg_item is None:
-                        print(f"Search for item {i}")
-                        msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
-                        await a.sleep(0.1)
-                        if not self.active:
-                            print("Died in search! :O")
-                            return
-                    (frame, x, y, z) = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)                    
+                    msg_item = await self._grab_waypoint(i)                    
                     await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
                     print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
                 print(f"All {cnt} items recieved!")                
@@ -103,6 +73,25 @@ class Vehicle:
             else:
                 print(f"Nothing new/No new mission :<")
             await a.sleep(0.5)   
+    
+    async def _grab_waypoint(self, seq):
+        self.ze_connection.mav.mission_request_int_send(
+            target_system=self.ze_connection.target_system,
+            target_component=self.ze_connection.target_component,
+            seq=seq
+        )   
+        await a.sleep(0.1)
+        msg_item = None
+        print(f"Looking for waypoint {seq}!")
+        while msg_item is None:
+            print(f"Search for item {seq}")
+            msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
+            await a.sleep(0.1)
+            if not self.active:
+                print("Died in search! :O")
+                return
+        wp = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)                    
+        return wp
 
     async def mission_exec(self):
         ## EXECUTE MISSION AND WAIT UNTIL DONE ##
