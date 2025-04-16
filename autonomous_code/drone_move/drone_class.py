@@ -4,7 +4,7 @@ from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
 import math
-# import time
+import time
 # import pigpio
 import os
 import csv
@@ -35,8 +35,10 @@ class Drone(vc.Vehicle):
             print(f"Connection Quality: {avg_qual}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")            
             if (super().conn_qual > 40 and avg_qual > 40):
                 if start_ == 0:
-                    start_ = super().pi.get_current_tick()
-                elif (super().pi.get_current_tick() - start_) > 2500:
+                    #start_ = super().pi.get_current_tick()
+                    start_ = time.time()
+                #elif (super().pi.get_current_tick() - start_) > 2500:
+                elif (time.time() - start_) > 25:
                     print(f"Comms issue!")
                     super().active = False 
                     start_ = 0
@@ -82,8 +84,10 @@ class Drone(vc.Vehicle):
         # will only allow a time of ten minutes (default) of recording data
         with open(filename, mode = "a", newline = "") as file:
             scribe = csv.writer(file)
-            start_ = super().pi.get_current_tick()
-            while (((super().pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
+            #start_ = super().pi.get_current_tick()
+            start_ = time.time()
+            #while (((super().pi.get_current_tick() - start_) * 1e6)/60) < loop_time_min:
+            while ((time.time() - start_)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
                     tm, msg = await a.to_thread(super().wait_4_msg,"LOCAL_POSITION_NED", 
@@ -125,8 +129,10 @@ class Drone(vc.Vehicle):
         while super().active:
             if self.roll > 70 or self.pitch > 70:
                 if start_ is 0:
-                    start_ = super().pi.get_current_tick()
-                elif (super().pi.get_current_tick() - start_) > 300:
+                    #start_ = super().pi.get_current_tick()
+                    start_ = time.time()
+                #elif (super().pi.get_current_tick() - start_) > 300:
+                elif (time.time() - start_) > 2:
                     self.active = False
                     super().mode = "LAND"
                     start_ = 0

@@ -19,7 +19,7 @@ class Vehicle:
         self.alt=0          
         self.battery=100
         self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)
-        self.pi = pigpio.pi()
+        #self.pi = pigpio.pi()
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         self.prev_qual = 0   
         self.mode = "STABILIZE"   
@@ -142,19 +142,25 @@ class Vehicle:
     def wait_4_msg(self, str_type: VALID_MESSAGES, block = False, time_out_sess = None, attempts = 4):    
     ## WAIT FOR A MESSAGE FOR ONE CYCLE OR JUST UNTIL  ##
     #time_out_sess is for total time but for the rp5 its gonna be in ticks 
-    #so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4    
+    #so every tick is 1 microsecond, will be spliced into attempts specificed by user or default 4   
+    # 
+    ## RAPS BERRY PI 5 DOES NOOOOOOOOOOOT SUPPORT PIGPIO ## 
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
             return msg
         else:                    
-            temp = time_out_sess * 1e6/ attempts
-            start_ = self.pi.get_current_tick()
-            while (self.pi.get_current_tick()- start_) < time_out_sess:
+            #temp = time_out_sess * 1e6/ attempts
+            temp = time_out_sess/ attempts
+            #start_ = self.pi.get_current_tick()
+            start_ = time.time()
+            #while (self.pi.get_current_tick()- start_) < time_out_sess:
+            while (time.time()- start_) < time_out_sess:
                 msg = self.ze_connection.recv_match(type = str_type, blocking = False, timeout = temp)
                 if msg is None:
                     continue
                 elif msg:                
-                    return (self.pi.get_current_tick() - start_), msg
+                    #return (self.pi.get_current_tick() - start_), msg
+                    return (time.time()- start_), msg
                 time.sleep(0.1)
             print("No message")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved      
