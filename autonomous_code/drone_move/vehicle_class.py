@@ -2,7 +2,7 @@ import asyncio as a
 from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
-import pigpio
+#import pigpio
 import time
 
 class Vehicle:
