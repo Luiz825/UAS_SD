@@ -5,14 +5,15 @@ import time
 from pymavlink import mavutil 
 
 conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod with GND
-# the default'udp:localhost:14551 keep for simulations! need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
+# the default'udp:localhost:14551 keep for simulations! 
+# need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
 
 async def main():
     loop = asyncio.get_event_loop()    
 
-    await asyncio.gather(
-        
-    )
+    await asyncio.to_thread(drone.to_infinity_and_beyond, h=5)
+    await asyncio.to_thread(drone.waypoint_mv, x=2, y = 2)
+
     
 
 #this will run the following plans:
@@ -22,7 +23,8 @@ async def main():
     2.check telemetry data
 if either fail the will be sent to landing protoccol
 will begin by starting takeoff protoccol
-Question: should it just go straight to landing OR be another async that will go back to path if the issue was resolved
+Question: should it just go straight to landing OR be another async 
+that will go back to path if the issue was resolved
 '''
 if __name__ == '__main__':
     time.sleep(2)

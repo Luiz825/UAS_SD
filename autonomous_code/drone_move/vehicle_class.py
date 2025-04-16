@@ -33,7 +33,6 @@ class Vehicle:
         ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
         while self.active:
             if self.mode == "MANUAL":
-
                 await a.sleep(0.01)
                 continue  
             self.ze_connection.mav.mission_request_list_send(

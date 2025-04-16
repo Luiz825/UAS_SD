@@ -3,6 +3,7 @@ import asyncio as a
 from pymavlink import mavutil
 from datetime import datetime
 from typing import Literal
+import math
 # import time
 # import pigpio
 import os
@@ -169,19 +170,18 @@ class Drone(vc.Vehicle):
         if (x != None or y != None or z != None):
             self.waypoint_mv(frame, x, y, z, yaw)                
         
-    def waypoint_mv(self, frame, x, y, z, yaw):
-        ## CHANGE THE TARGET POS TO INPUT ##
-        pos = super().wait_4_msg("LOCAL_POSITION_NED", block = True)
-        x = pos.x if x is None else x
-        y = pos.y if y is None else y
-        z = 0 if z is None else z    
-        yaw = super().wait_4_msg("ATTITUDE", block = True).yaw if yaw is None else yaw
-        
+    def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
+        ## CHANGE THE TARGET POS TO INPUT ##               
         super().ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
             0, super().ze_connectionthe_connection.target_system, 
             super().ze_connection.the_connection.target_component, 
             mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
-            4088, x, y, (z + pos.z), 0, 0, 0, 0, 0, 0, yaw, 0))                   
+            4088, 
+            (x + super().x) if frame == 1 else (x + super().lon), 
+            (y + super().y) if frame == 1 else (y + super().lat), 
+            (z + abs(super().z)) if frame == 1 else (z + super().alt), 
+            0, 0, 0, 0, 0, 0, yaw, 0))     
+    print(super().wait_4_msg(str_type="COMMAND_ACK", block = True))                       
 
     def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
@@ -197,7 +197,7 @@ class Drone(vc.Vehicle):
         super().mode = "STABILIZE"
         print(super().wait_4_msg(str_type="HEARTBEAT", block=True))
         
-    def to_infinity_and_beyond(self, h, yaw = 0):   
+    def to_infinity_and_beyond(self, h=0.25, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
         super().mode = "GUIDED"
         self.set_wrist(1)
