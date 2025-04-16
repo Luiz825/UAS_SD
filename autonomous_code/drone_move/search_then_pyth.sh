@@ -31,9 +31,9 @@ if [ "$STATUS" = "Was not able to find /dev/ttyUSB0 sry :(" ]; then
 fi
 echo -e "/dev/ttyUSB0 found! Running python..."
 echo "/dev/ttyUSB0 found! Running python..." >> rp5_login_state.txt        
-source /media/cece/DuelData/academic/SDSU/SP2025/COMPE492/UAS_SD/kidkiller/myenv_pymavlink/bin/activate #change to local path
+source /home/pi/venv-example/bin/activate #change to local path
 # enviornment sett on the rapberry pi
-python3 /home/pi/autonomous_code/autonomous_mode.py #change for local path
+python3 /home/pi/autonomous_code/hover_test_man.py #change for local path
 
 # insert path here after pulling from GitHub on raspberry pi
 
