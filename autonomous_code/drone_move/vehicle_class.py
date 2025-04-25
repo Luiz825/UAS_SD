@@ -1,26 +1,34 @@
 import asyncio as a
 from pymavlink import mavutil
 from typing import Literal
-#import pigpio
+from dataclasses import dataclass
 import time
 import math
 
+@dataclass
+class Vector:
+        x: None
+        y: None
+        z: None
 
 class Vehicle:
     VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
                           "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"]
     VALID_MODES = Literal["GUIDED", "LAND", "RTL", "AUTO", "MANUAL"]
+    
 
     def __init__(self, conn='udp:localhost:14551', t=5):
         self.x=0
         self.y=0
-        self.z=0    
+        self.z=0         
         self.lat=0
         self.lon=0
-        self.alt=0          
+        self.alt=0
+        self.GPS = Vector(0, 0, 0)
+        self.NED = Vector(0, 0, 0)
+        self.VEL = Vector(0, 0, 0)                                
         self.battery=100
-        self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)
-        #self.pi = pigpio.pi()
+        self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)        
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         self.prev_qual = 0   
         self.mode = "STABILIZE"   
@@ -28,12 +36,10 @@ class Vehicle:
         self.waypoint_queue = a.Queue()      
         self.mission = False
         self.waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
-        self.t_sess = t
-    
+        self.t_sess = t     
+
     async def track_mission_target(self):
-        """
-        Track and verify if the drone is heading toward the next mission waypoint.
-        """
+       ##TRACK LOCATION OF DRONE AND WHERE IN SPACE TIME IT IS##
         # Request current waypoint (what the autopilot thinks is next)
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system,
@@ -79,27 +85,26 @@ class Vehicle:
             wp_alt = msg_wp.z / 1000                        
 
             # Calculate distance and bearing to the next waypoint
-            distance = await self.haversine(wp_lat, wp_lon)
+            distance = await a.to_thread(self.haversine(wp_lat, wp_lon))
             print(f"Next WP#{current_seq}: ({wp_lat:.7f}, {wp_lon:.7f}) | Distance: {distance:.2f} m")
 
             if distance > 5:  # Can tune this threshold
-                print(f"[INFO] Drone en route — verifying path...")
-                # Optionally: check vector/bearing alignment with gyroscope yaw
-                # Optional: check if drift is increasing
+                print(f"Drone en route — verifying path...")
+
             else:
                 print(f"[INFO] Approaching or reached waypoint #{current_seq}")
 
             await a.sleep(2)
 
-    async def haversine(self, lat2, lon2):
-        await a.sleep(0.1)
+    def haversine(self, lat2, lon2):
+        ## CALCULATE THE 
+        time.sleep(0.1)
         
         R = 6371000  # Earth radius in meters
         phi1 = math.radians(self.lat)
         phi2 = math.radians(lat2)
         d_phi = math.radians(lat2 - (self.lat))
         d_lambda = math.radians(lon2 - (self.lon))
-
         a = math.sin(d_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))        
         return R * c    
@@ -158,7 +163,7 @@ class Vehicle:
             rel = "LOCAL_POSITION_NED"         
             msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
-                self.x, self.y, self.z = msg.x, msg.y, msg.z        
+                self.NED.x, self.NED.z = msg.x, msg.y, msg.z        
             print(f"Current Position: x = {self.x:.2f} m, y = {self.y:.2f} m, z = {self.z:.2f} m")                
             await a.sleep(0.1)
         
@@ -169,9 +174,9 @@ class Vehicle:
             # Wait for initial position
             msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
-                self.lat = msg.lat / 1e7
-                self.lon = msg.lon / 1e7
-                self.alt = msg.alt / 1000.0 
+                self.GPS.x = msg.lat / 1e7
+                self.GPS.y = msg.lon / 1e7
+                self.GPS.z = msg.alt / 1000.0 
             print(f"Current Coordinate: lat = {self.lat:.2f} m, lon = {self.lon:.2f} m, alt = {self.alt:.2f} m")    
             await a.sleep(0.1)
 

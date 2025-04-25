@@ -162,7 +162,7 @@ class Drone(vc.Vehicle):
                 self.pitch = msg.pitch * 100 / math.pi
             print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
         
-    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, 
+    async def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, 
                            xv = None, yv = None, zv = None, yaw = None):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
@@ -174,7 +174,7 @@ class Drone(vc.Vehicle):
         # i also don't really recall if you need to force cast thos strings
 
         if (x != None or y != None or z != None):
-            self.waypoint_mv(frame, x, y, z, yaw)                
+            await a.to_thread(self.waypoint_mv(frame, x, y, z, yaw))
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
         ## CHANGE THE TARGET POS TO INPUT ##               
@@ -189,7 +189,7 @@ class Drone(vc.Vehicle):
             0, 0, 0, 0, 0, 0, yaw, 0))     
     print(super().wait_4_msg(str_type="COMMAND_ACK", block = True))                       
 
-    def settle_down(self, tol=0.05):
+    async def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
         # tolerance default is 50mm
         super().mode = "RTL"
@@ -199,9 +199,9 @@ class Drone(vc.Vehicle):
             if super().mode != "LAND" and super().battery < 10:
                 super().mode = "LAND"
                 target_x, target_y = super().x, super().y
-        self.set_wrist(0)
         super().mode = "STABILIZE"
-        print(super().wait_4_msg(str_type="HEARTBEAT", block=True))
+        await a.to_thread(self.set_wrist(0))                
+
         
     def to_infinity_and_beyond(self, h=0.25, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
