@@ -1,9 +1,10 @@
 import asyncio as a
 from pymavlink import mavutil
-from datetime import datetime
 from typing import Literal
 #import pigpio
 import time
+import math
+
 
 class Vehicle:
     VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
@@ -29,93 +30,79 @@ class Vehicle:
         self.waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
         self.t_sess = t
     
-    async def grab_mission_stat(self):
-        ##GRAB MISSION WAYPOINTS AND UPDATE STUFF ##
+    async def track_mission_target(self):
+        """
+        Track and verify if the drone is heading toward the next mission waypoint.
+        """
+        # Request current waypoint (what the autopilot thinks is next)
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system,
+            self.ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            0,
+            mavutil.mavlink.MAVLINK_MSG_ID_MISSION_CURRENT,
+            0, 0, 0, 0, 0, 0
+        )        
         while self.active:
-            if self.mode == "MANUAL":
-                await a.sleep(0.01)
-                continue  
-            self.ze_connection.mav.mission_request_list_send(
-                target_system=self.ze_connection.target_system,
-                target_component=self.ze_connection.target_component
-            )
+            if self.mode != "AUTO":
+                await a.sleep(0.5)
+                continue            
+            
             await a.sleep(0.1)
-            msg_mission = await a.to_thread(self.wait_4_msg, str_type="MISSION_COUNT")
-            if msg_mission and msg_mission.count > 1:                
-                cnt = msg_mission.count
-                msg_item = await self._grab_waypoint(0)
-                if self.waypoint_0 != msg_item:
-                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    self.waypoint_0 = msg_item
-                else:
-                    print(f"Same as previous mission :)")
-                    await a.sleep(2)
-                    continue #to restart the while self.active loop in the beginning
-                print(f"Recieving #{cnt} mission waypoints!")
-                for i in range(1, cnt):
-                    msg_item = await self._grab_waypoint(i)                    
-                    await self.waypoint_queue.put((msg_item.frame, msg_item.x, msg_item.y, msg_item.z))
-                    print(f"Waypoint {i} recieved! {msg_item.x/1e7}, {msg_item.y/1e7}, {msg_item.z/1000}")                
-                print(f"All {cnt} items recieved!")                
-                self.mode = "AUTO"
-                self.ze_connection.mav.command_long_send(
-                    self.ze_connection.target_system,
-                    self.ze_connection.target_component,
-                    mavutil.mavlink.MAV_CMD_MISSION_START,
-                    0, 0, 0, 0, 0, 0, 0, 0)
-                msg_mission_start = None
-                while msg_mission_start is None:
-                    msg_mission_start= await a.to_thread(self.wait_4_msg, "MISSION_ACK")
-                    print(msg_mission_start)
-                    await a.sleep(0.1)
-                self.mission = True
-                print("Mission started")
-            else:
-                print(f"Nothing new/No new mission :<")
-            await a.sleep(0.5)   
-    
-    async def _grab_waypoint(self, seq):
-        self.ze_connection.mav.mission_request_int_send(
+
+            # Get current waypoint index
+            msg_current = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
+            if not msg_current:
+                print("No mission yet ':{")
+                await a.sleep(1)
+                continue            
+
+            current_seq = msg_current.seq            
+            await a.sleep(0.1)
+
+            # Request the waypoint item
+            self.ze_connection.mav.mission_request_int_send(
             target_system=self.ze_connection.target_system,
             target_component=self.ze_connection.target_component,
-            seq=seq
-        )   
-        await a.sleep(0.1)
-        msg_item = None
-        print(f"Looking for waypoint {seq}!")
-        while msg_item is None:
-            print(f"Search for item {seq}")
-            msg_item = await a.to_thread(self.wait_4_msg, str_type = "MISSION_ITEM_INT")
-            await a.sleep(0.1)
-            if not self.active:
-                print("Died in search! :O")
-                return
-        wp = (msg_item.frame, msg_item.x, msg_item.y, msg_item.z)                    
-        return wp
+            seq=current_seq
+            )
 
-    async def mission_exec(self):
-        ## EXECUTE MISSION AND WAIT UNTIL DONE ##
-        current_seq = 0
-        while self.active:   
-            if self.mode == "MANUAL":
-                await a.sleep(0.01)
-                continue   
-            print(f"Mission execution: {current_seq}")
-            now = datetime.now()
-            if self.mission and not self.waypoint_queue.empty(): 
-                while self.mode != "AUTO":
-                    await a.sleep(0.5)
-                msg = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
-                if msg:
-                    if msg.seq == current_seq + 1:
-                        frame, x, y, z = await self.waypoint_queue.get()
-                        print(f"Reached waypoint {current_seq} at {x/1e7}, {y/1e7}, \
-                              {z/1000} at {now.strftime('%Y-%m-%d %H:%M:%S')}")                    
-                        current_seq = msg.seq
-            elif self.mission and self.waypoint_queue.empty():
-                self.mode = "GUIDED"
-                self.mission = False
-            await a.sleep(1)
+            # Get the waypoint details
+            msg_wp = await a.to_thread(self.wait_4_msg, str_type="MISSION_ITEM_INT")
+            if not msg_wp:
+                print("No mission item retrieved! :<")
+                await a.sleep(0.1)
+                continue
+
+            wp_lat = msg_wp.x / 1e7
+            wp_lon = msg_wp.y / 1e7
+            wp_alt = msg_wp.z / 1000                        
+
+            # Calculate distance and bearing to the next waypoint
+            distance = await self.haversine(wp_lat, wp_lon)
+            print(f"Next WP#{current_seq}: ({wp_lat:.7f}, {wp_lon:.7f}) | Distance: {distance:.2f} m")
+
+            if distance > 5:  # Can tune this threshold
+                print(f"[INFO] Drone en route — verifying path...")
+                # Optionally: check vector/bearing alignment with gyroscope yaw
+                # Optional: check if drift is increasing
+            else:
+                print(f"[INFO] Approaching or reached waypoint #{current_seq}")
+
+            await a.sleep(2)
+
+    async def haversine(self, lat2, lon2):
+        await a.sleep(0.1)
+        
+        R = 6371000  # Earth radius in meters
+        phi1 = math.radians(self.lat)
+        phi2 = math.radians(lat2)
+        d_phi = math.radians(lat2 - (self.lat))
+        d_lambda = math.radians(lon2 - (self.lon))
+
+        a = math.sin(d_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))        
+        return R * c    
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##

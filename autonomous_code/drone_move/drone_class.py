@@ -44,7 +44,7 @@ class Drone(vc.Vehicle):
                     start_ = 0
                 else:
                     start_ = 0
-            elif super().battery < 20:
+            elif super().battery is not None and super().battery < 20:
                 super().active = False
                 print(f"Battery low!")                    
             await a.sleep(1)
@@ -53,7 +53,7 @@ class Drone(vc.Vehicle):
         await a.to_thread(self.settle_down)
         await a.sleep(2)
     
-    async def log_test(self, filename = "FILE_log.cvs", loop_time_min = 10, conn=True):
+    async def log_test(self, filename = "FILE_log.csv", loop_time_min = 10, conn=True):
         ## LOG DATA ON THE POS ##
         # the loop time is in minutes
         if not os.path.isfile(filename):
