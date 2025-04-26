@@ -18,12 +18,6 @@ class Vehicle:
     
 
     def __init__(self, conn='udp:localhost:14551', t=5):
-        self.x=0
-        self.y=0
-        self.z=0         
-        self.lat=0
-        self.lon=0
-        self.alt=0
         self.GPS = Vector(0, 0, 0)
         self.NED = Vector(0, 0, 0)
         self.VEL = Vector(0, 0, 0)                                
@@ -88,7 +82,7 @@ class Vehicle:
             distance = await a.to_thread(self.haversine(wp_lat, wp_lon))
             print(f"Next WP#{current_seq}: ({wp_lat:.7f}, {wp_lon:.7f}) | Distance: {distance:.2f} m")
 
-            if distance > 5:  # Can tune this threshold
+            if distance > 0.1:  # Can tune this threshold
                 print(f"Drone en route — verifying path...")
 
             else:
@@ -97,7 +91,7 @@ class Vehicle:
             await a.sleep(2)
 
     def haversine(self, lat2, lon2):
-        ## CALCULATE THE 
+        ## CALCULATE THE SHORTEST PATH FROM LAT TO LON POINT USING HAVERSINE ##
         time.sleep(0.1)
         
         R = 6371000  # Earth radius in meters
@@ -108,6 +102,12 @@ class Vehicle:
         a = math.sin(d_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))        
         return R * c    
+    
+    def alt_diff(self):
+        ## DETERMINE IF THE CURRENT VELOCITY IS ENOUGH TO REACH WAYPOINT ALTITUDE ##
+        time.sleep(0.1)
+
+        
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
@@ -163,8 +163,8 @@ class Vehicle:
             rel = "LOCAL_POSITION_NED"         
             msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
-                self.NED.x, self.NED.z = msg.x, msg.y, msg.z        
-            print(f"Current Position: x = {self.x:.2f} m, y = {self.y:.2f} m, z = {self.z:.2f} m")                
+                self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
+            print(f"Current Position: x = {self.NED.x:.2f} m, y = {self.NED.y:.2f} m, z = {self.NED.z:.2f} m")                
             await a.sleep(0.1)
         
     async def update_GPS(self):
@@ -177,7 +177,7 @@ class Vehicle:
                 self.GPS.x = msg.lat / 1e7
                 self.GPS.y = msg.lon / 1e7
                 self.GPS.z = msg.alt / 1000.0 
-            print(f"Current Coordinate: lat = {self.lat:.2f} m, lon = {self.lon:.2f} m, alt = {self.alt:.2f} m")    
+            print(f"Current Coordinate: lat = {self.GPS.lat:.2f} m, lon = {self.GPS.lon:.2f} m, alt = {self.GPS.alt:.2f} m")    
             await a.sleep(0.1)
 
     async def change_mode(self):

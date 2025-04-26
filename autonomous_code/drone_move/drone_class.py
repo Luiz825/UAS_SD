@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Literal
 import math
 import time
-# import pigpio
+#import pigpio
 import os
 import csv
 import math
@@ -44,7 +44,8 @@ class Drone(vc.Vehicle):
                     start_ = 0
                 else:
                     start_ = 0
-            elif self.battery is not None and self.battery < 20:
+            elif self.battery is not None and self.battery < 20: 
+                #fix the battery monitor on the flight controller
                 self.active = False
                 print(f"Battery low!")                    
             await a.sleep(1)
