@@ -18,6 +18,8 @@ from hailo_apps_infra.hailo_rpi_common import (
 )
 from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 
+
+##   DELETE ##
 # Initialize tracking variables
 prev_time = time.time()
 fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
@@ -25,6 +27,8 @@ inference_time_history = deque(maxlen=10)  # Store last 10 inference times
 confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores
 
 # File paths for logging
+
+## DELETE ##
 fps_log_file = "fps_log.csv"
 inference_time_log_file = "inference_time_log.csv"
 
@@ -191,3 +195,5 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     app = GStreamerDetectionApp(app_callback, user_data)            
     app.run()
+
+
