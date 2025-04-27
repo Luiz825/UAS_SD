@@ -264,6 +264,7 @@ class Drone(vc.Vehicle):
         while self.active:
             await a.sleep(0.1)
             continue
+        return
 
     def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=4608, cam_height_px=2592 , hfov_deg=66, vfov_deg=41):
         ## Convert pixel offset from center into meters on ground ###
