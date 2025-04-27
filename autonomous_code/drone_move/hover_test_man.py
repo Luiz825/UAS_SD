@@ -38,7 +38,7 @@ that will go back to path if the issue was resolved
 '''
 if __name__ == '__main__':
     time.sleep(2)
-    with open("/home/pi/STORK_TEST_AUTONOMOUS.txt", "w") as f:
+    with open("/home/pi/STORK_TEST_AUTONOMOUS_HOVER_CAM_PAYLOAD.txt", "w") as f:
         # Redirect stdout to the file
         original_stdout = sys.stdout  # Save original stdout
         sys.stdout = f
