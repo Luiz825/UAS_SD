@@ -1,6 +1,5 @@
 #!/bin/bash
 
-sudo pigpiod -f
 STATUS="Activate drone detection! :0"
 TIMESTAMP=$(date "+%c")
 declare -i lim=5

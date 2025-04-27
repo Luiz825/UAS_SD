@@ -149,7 +149,7 @@ class Drone(vc.Vehicle):
         start_ = 0
         while self.active:
             if self.roll > 70 or self.pitch > 70:
-                if start_ is 0:
+                if start_ == 0:
                     #start_ = self.pi.get_current_tick()
                     start_ = time.time()
                 #elif (self.pi.get_current_tick() - start_) > 300:
