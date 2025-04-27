@@ -107,7 +107,7 @@ class Vehicle:
         ## DETERMINE IF THE CURRENT VELOCITY IS ENOUGH TO REACH WAYPOINT ALTITUDE ##
         time.sleep(0.1)
 
-        
+
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
@@ -189,9 +189,11 @@ class Vehicle:
             if msg_hb:
                 hb_mode = msg_hb.custom_mode
             await a.sleep(0.1)
-            if mode != self.mode or (hb_mode != None and hb_mode != self.mode):
-                self.mode_activate(self.mode)
-                mode = self.mode
+            if mode != self.mode:
+                self.mode_activate(self.mode)                
+            elif (hb_mode != None and hb_mode != self.mode):
+                self.mode = hb_mode          
+            mode = self.mode      
             await a.sleep(0.1) 
 
     def mode_activate(self, mode_e: VALID_MODES):
