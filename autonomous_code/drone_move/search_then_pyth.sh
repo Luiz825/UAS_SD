@@ -30,7 +30,7 @@ if [ "$STATUS" = "Was not able to find /dev/ttyUSB0 sry :(" ]; then
 fi
 echo -e "/dev/ttyUSB0 found! Running python..."
 echo "/dev/ttyUSB0 found! Running python..." >> rp5_login_state.txt        
-source /home/pi/venv-example/bin/activate #change to local path
+source /home/pi/UAS_SD/hailo8l/hailo-rpi5-examples/setup_env.sh  >> rp5_login_state.txt #change to local
 # enviornment sett on the rapberry pi
 python3 /home/pi/UAS_SD/autonomous_code/drone_move/hover_test_man.py #change for local path
 
