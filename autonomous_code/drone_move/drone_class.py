@@ -30,7 +30,7 @@ class Drone(vc.Vehicle):
     #VALID_MODES = vc.Vehicle.VALID_MODES + Literal[ "STABILIZE", "LOITER"]
 
     def __init__(self, conn, t=10):
-        super(Drone, self).__init__(conn, t)        
+        super(Drone, self).__init__(conn=conn, t=t)        
         self.roll=0
         self.pitch=0                                
         # % is the % of packages lost                 
