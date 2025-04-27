@@ -33,7 +33,7 @@ echo -e "/dev/ttyUSB0 found! Running python..."
 echo "/dev/ttyUSB0 found! Running python..." >> rp5_login_state.txt        
 source /home/pi/venv-example/bin/activate #change to local path
 # enviornment sett on the rapberry pi
-python3 /home/pi/autonomous_code/hover_test_man.py #change for local path
+python3 /home/pi/UAS_SD/autonomous_code/drone_move/hover_test_man.py #change for local path
 
 # insert path here after pulling from GitHub on raspberry pi
 
