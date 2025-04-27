@@ -9,6 +9,22 @@ import time
 import os
 import csv
 import math
+import gi
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst, GLib
+import os
+import numpy as np
+import cv2
+import hailo
+import sys
+from camera_q_class import user_app_callback_class, app_callback
+
+from hailo_apps_infra.hailo_rpi_common import (
+    get_caps_from_pad,
+    get_numpy_from_buffer,
+    app_callback_class,
+)
+from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 
 class Drone(vc.Vehicle):
     #VALID_MESSAGES = vc.Vehicle.VALID_MESSAGES + Literal[""]
@@ -226,3 +242,10 @@ class Drone(vc.Vehicle):
             param2=pwm,
             param3=0, param4=0, param5=0, param6=0, param7=0
         )  
+    async def cam_start(self):
+        user_data = user_app_callback_class()
+        app = GStreamerDetectionApp(app_callback, user_data) 
+        await a.to_thread(app.run())
+        while self.active:
+            await a.sleep(0.1)
+            continue
