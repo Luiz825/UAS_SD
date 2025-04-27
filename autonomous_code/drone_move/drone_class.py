@@ -363,24 +363,36 @@ class Drone(vc.Vehicle):
             y_max = bbox.ymax()
             w = bbox.width()
             h = bbox.height()
+
+            threshold_width = width * 0.4
+            threshold_height = height * 0.4
+
+            threshold_x_min = (width - threshold_width) / 2
+            threshold_x_max = (width + threshold_width) / 2
+            threshold_y_min = (height - threshold_height) / 2            
+            threshold_y_max = (height + threshold_height) / 2
+
             target_x = ((x_min + x_max) / 2) * 1000
             target_y = ((y_min + y_max) / 2) * 1000
 
-            offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y, cam_height_px=h, cam_width_px=w)
-            center_x, center_y = self.pixel_to_meters(pixel_x=center_x, pixel_y=center_y, cam_height_px=h, cam_width_px=w)
+            offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
+            center_x, center_y = self.pixel_to_meters(pixel_x=center_x, pixel_y=center_y)
 
             print(f"Center of detection: {target_x, target_y}")
             print(f"Center of frame: {frame_center_x, frame_center_y}")
 
             centered_x = False
             centered_y = False
+
             # Movement decisions
-            if center_x == (offset_x + 0.3) or center_x == (offset_x - 0.3):
+            if offset_x <= (center_x + 0.003) or offset_x >= (center_x - 0.003):
                centered_x = True
-            if center_y == (offset_y + 0.3) or center_y == (offset_y - 0.3):
-                centered_y = True         
+            if offset_y <= (center_y + 0.003) or offset_y >= (center_y - 0.003):
+                centered_y = True        
+
+            bullseye =  x_min * width >= threshold_x_min and x_max * width <= threshold_x_max and y_min * height >= threshold_y_min and y_max * height <= threshold_y_min            
             
-            if centered_y and centered_x:
+            if centered_y and centered_x and abs(self.NED.z) <= 0.5 and bullseye:
                 self.payload_sequence()
                 time.sleep(0.5)
                 self.mode = "RTL"                
