@@ -39,7 +39,7 @@ if __name__ == '__main__':
         sys.stdout = f
 
         print("After ten seconds this was written to the file in question")
-        drone = dc.Drone(10, conn=conn)
+        drone = dc.Drone(conn=conn)
         print(drone.wait_4_msg("HEARTBEAT", block=True))
 
         asyncio.run(main(drone))
