@@ -107,7 +107,6 @@ class Vehicle:
         ## DETERMINE IF THE CURRENT VELOCITY IS ENOUGH TO REACH WAYPOINT ALTITUDE ##
         time.sleep(0.1)
 
-
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
@@ -183,7 +182,7 @@ class Vehicle:
     async def change_mode(self):
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
-        while True:
+        while self.active:
             msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
             hb_mode = None
             if msg_hb:
@@ -192,8 +191,10 @@ class Vehicle:
             if mode != self.mode:
                 self.mode_activate(self.mode)                
             elif (hb_mode != None and hb_mode != self.mode):
-                self.mode = hb_mode          
+                self.mode = hb_mode                      
             mode = self.mode      
+            if mode == "RTL" or mode == "Land":
+                self.active = False
             await a.sleep(0.1) 
 
     def mode_activate(self, mode_e: VALID_MODES):

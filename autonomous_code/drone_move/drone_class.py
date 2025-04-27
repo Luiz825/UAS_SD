@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Literal
 import math
 import time
-#import pigpio
 import os
 import csv
 import math
@@ -13,10 +12,10 @@ import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 import os
-import numpy as np
-import cv2
+import numpy as nP
 import hailo
 import sys
+from collections import deque #MAKE INTO ASYNC QUEUE
 from camera_q_class import user_app_callback_class, app_callback
 
 from hailo_apps_infra.hailo_rpi_common import (
@@ -35,7 +34,12 @@ class Drone(vc.Vehicle):
         self.roll=0
         self.pitch=0                                
         # % is the % of packages lost                 
-        self.drop = False        
+        self.drop = False   
+        self.app = None
+        self.prev_time = time.time()
+        self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
+        self.inference_time_history = deque(maxlen=10)  # Store last 10 inference times
+        self.confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores     
     
     async def land_question(self):
         ## CHECK IF NEED TO LAND ##
@@ -132,10 +136,10 @@ class Drone(vc.Vehicle):
                 await a.sleep(0.01)
                 continue  
             if self.drop:
-                await a.to_thread(self.move_servo, inst, 1500)
-                await a.sleep(10)
-                await a.to_thread(self.move_servo, inst, 1000)
-                await a.sleep(2)
+                await a.to_thread(self.move_servo, inst, 850)
+                await a.sleep(0.5)
+                await a.to_thread(self.move_servo, inst, 1550)
+                await a.sleep(0.5)
                 self.drop = False
             await a.sleep(0.1)
 
@@ -165,8 +169,7 @@ class Drone(vc.Vehicle):
             mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
             0,  # Confirmation
             1,  # Termination ON
-            0, 0, 0, 0, 0, 0
-        )
+            0, 0, 0, 0, 0, 0)
     
     async def update_GYRO(self):
         while self.active:    
@@ -179,8 +182,7 @@ class Drone(vc.Vehicle):
                 self.pitch = msg.pitch * 100 / math.pi
             print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
         
-    async def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, 
-                           xv = None, yv = None, zv = None, yaw = None):
+    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, yaw = None):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
     ## MOVE DRONE ##
@@ -189,21 +191,33 @@ class Drone(vc.Vehicle):
         # if all of these parameters can be organized in a list format
         # [j = getattr(str("pos.")+str(j) if j is None else j)]
         # i also don't really recall if you need to force cast thos strings
-
+        time.sleep(1)
         if (x != None or y != None or z != None):
-            await a.to_thread(self.waypoint_mv(frame, x, y, z, yaw))
+            self.waypoint_mv(frame, x, y, z, yaw)
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
         ## CHANGE THE TARGET POS TO INPUT ##               
-        self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-            0, self.ze_connectionthe_connection.target_system, 
-            self.ze_connection.the_connection.target_component, 
-            mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
-            4088, 
-            (x + self.x) if frame == 1 else (x + self.lon), 
-            (y + self.y) if frame == 1 else (y + self.lat), 
-            (z + abs(self.z)) if frame == 1 else (z + self.alt), 
-            0, 0, 0, 0, 0, 0, yaw, 0))     
+        if frame:
+            self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+                0, self.ze_connectionthe_connection.target_system, 
+                self.ze_connection.the_connection.target_component, 
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                4088, 
+                (x + self.x), 
+                (y + self.y), 
+                ((z + abs(self.z))*-1),
+                0, 0, 0, 0, 0, 0, yaw, 0))   
+        else:
+            self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+                0, self.ze_connectionthe_connection.target_system, 
+                self.ze_connection.the_connection.target_component, 
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                4088, 
+                (x + self.lon), 
+                (y + self.lat), 
+                (z + self.alt),
+                0, 0, 0, 0, 0, 0, yaw, 0))   
+            
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))                       
 
     async def settle_down(self, tol=0.05):
@@ -242,10 +256,158 @@ class Drone(vc.Vehicle):
             param2=pwm,
             param3=0, param4=0, param5=0, param6=0, param7=0
         )  
+
     async def cam_start(self):
         user_data = user_app_callback_class()
-        app = GStreamerDetectionApp(app_callback, user_data) 
-        await a.to_thread(app.run())
+        self.app = GStreamerDetectionApp(user_data, self.app_callback) 
+        await a.to_thread(self.app.run())
         while self.active:
             await a.sleep(0.1)
             continue
+
+    def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=4608, cam_height_px=2592 , hfov_deg=66, vfov_deg=41):
+        ## Convert pixel offset from center into meters on ground ###
+        altitude_m=self.NED.z * -1
+        # Calculate real-world width and height of view
+        half_hfov_rad = math.radians(hfov_deg / 2)
+        half_vfov_rad = math.radians(vfov_deg / 2)
+
+        view_width_m = 2 * altitude_m * math.tan(half_hfov_rad)
+        view_height_m = 2 * altitude_m * math.tan(half_vfov_rad)
+
+        # Meters per pixel
+        meters_per_pixel_x = view_width_m / cam_width_px
+        meters_per_pixel_y = view_height_m / cam_height_px
+
+        # Convert pixel offsets to meters
+        offset_x_m = pixel_x * meters_per_pixel_x
+        offset_y_m = pixel_y * meters_per_pixel_y
+
+        ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
+        return offset_x_m, offset_y_m
+
+    def app_callback(self, pad, info, user_data):            
+        buffer = info.get_buffer()
+        if buffer is None:
+            return Gst.PadProbeReturn.OK
+
+        user_data.increment()
+        frame_count = user_data.get_count()
+        string_to_print = f"Frame count: {frame_count}\n"
+
+        # Get the video format details
+        format, width, height = get_caps_from_pad(pad)
+
+        frame = None
+        if user_data.use_frame and format and width and height:
+            frame = get_numpy_from_buffer(buffer, format, width, height)
+
+        # Get detections and start timing inference
+        roi = hailo.get_roi_from_buffer(buffer)
+
+        start_inference_time = time.time()
+        detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
+        end_inference_time = time.time()
+
+        # Calculate inference time
+        inference_time = (end_inference_time - start_inference_time) * 1000  # Convert to ms
+        avg_confidence = 0  # Default value in case of no detections
+
+        if len(detections) > 0:
+            self.inference_time_history.append(inference_time)
+            
+            # Compute average confidence score for detected objects
+            confidence_scores = [detection.get_confidence() for detection in detections]
+            avg_confidence = sum(confidence_scores) / len(confidence_scores)
+            self.confidence_score_history.append(avg_confidence)
+
+        # Calculate FPS
+        current_time = time.time()
+        time_diff = current_time - self.prev_time
+        self.prev_time = current_time
+
+        if time_diff > 0:
+            fps = 1 / time_diff
+            self.fps_history.append(fps)  # Store FPS values for averaging
+        else:
+            fps = 0
+
+        # Compute moving averages
+        avg_fps = sum(self.fps_history) / len(self.fps_history) if self.fps_history else 0
+        avg_inference_time = sum(self.inference_time_history) / len(self.inference_time_history) if self.inference_time_history else 0
+        avg_confidence = sum(self.confidence_score_history) / len(self.confidence_score_history) if self.confidence_score_history else 0
+
+        avg_fps = round(avg_fps, 2)
+        avg_inference_time = round(avg_inference_time, 2)
+        avg_confidence = round(avg_confidence, 2)
+
+        print(f"FPS: {avg_fps} | Inference Time: {avg_inference_time} ms | Avg Confidence: {avg_confidence}")
+
+        # Log FPS, inference time, and confidence score to CSV files
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(timestamp)
+        # Parse detections
+        detection_count = 0
+        frame_center_x = width / 2
+        frame_center_y = height / 2
+
+        for detection in detections:
+            label = detection.get_label()
+            bbox = detection.get_bbox()
+            confidence = detection.get_confidence()
+
+            x_min = bbox.xmin()
+            x_max = bbox.xmax()
+            y_min = bbox.ymin()
+            y_max = bbox.ymax()
+            w = bbox.width()
+            h = bbox.height()
+            target_x = ((x_min + x_max) / 2) * 1000
+            target_y = ((y_min + y_max) / 2) * 1000
+
+            offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y, cam_height_px=h, cam_width_px=w)
+            center_x, center_y = self.pixel_to_meters(pixel_x=center_x, pixel_y=center_y, cam_height_px=h, cam_width_px=w)
+
+            print(f"Center of detection: {target_x, target_y}")
+            print(f"Center of frame: {frame_center_x, frame_center_y}")
+
+            centered_x = False
+            centered_y = False
+            # Movement decisions
+            if center_x == (offset_x + 0.3) or center_x == (offset_x - 0.3):
+               centered_x = True
+            if center_y == (offset_y + 0.3) or center_y == (offset_y - 0.3):
+                centered_y = True         
+            
+            if centered_y and centered_x:
+                self.payload_sequence()
+                time.sleep(0.5)
+                self.mode = "RTL"                
+            else:
+                self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
+                time.sleep(0.5)
+                while abs(self.VEL.x) > 0.5 and abs(self.VEL.y) > 0.5 and abs(self.VEL.z) > 0.5:
+                    continue
+
+            # Get track ID
+            track_id = 0
+            track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
+            if len(track) == 1:
+                track_id = track[0].get_id()
+
+            string_to_print += (
+                f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n"
+            )
+            detection_count += 1
+
+            print( f"{frame} Detections: {detection_count}")
+            print( f"{frame} FPS: {avg_fps}")
+            print( f"{frame} Inference Time: {avg_inference_time} ms")
+            print( f"{frame} Avg Confidence: {avg_confidence}")
+
+        if user_data.use_frame:
+            user_data.set_frame(frame)
+
+        print(string_to_print)
+        return Gst.PadProbeReturn.OK        
+    
