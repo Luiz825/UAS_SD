@@ -129,7 +129,7 @@ class Drone(vc.Vehicle):
                 file.flush()
                 await a.sleep(3)
     
-    async def payload_sequence(self, inst):
+    async def payload_sequence(self, inst=8):
         ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
         while self.active:
             if self.mode == "MANUAL":
@@ -245,7 +245,7 @@ class Drone(vc.Vehicle):
             0, 0, 0, 0, yaw, 0, 0, h)    
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))          
 
-    def move_servo(self, inst, pwm):
+    def move_servo(self, inst=8, pwm=1500):
         ## MOVE THE MOTOR AT INST A VAL OF PWM ##
         self.ze_connection.mav.command_long_send(
             target_system=self.ze_connection.target_system,
@@ -438,7 +438,8 @@ class Drone(vc.Vehicle):
             user_data.set_frame(frame)
 
         print(string_to_print)
-        return Gst.PadProbeReturn.OK        
+        return Gst.PadProbeReturn.OK   
+         
     def app_callback_scan(self, pad, info, user_data):            
         buffer = info.get_buffer()
         if buffer is None:

@@ -19,7 +19,7 @@ async def main(drone):
         drone.crash_check(),
         drone.cam_start_scan(),
         drone.land_question(),
-        drone.payload_sequence(),
+        drone.payload_sequence(inst=8),
         drone.update_GPS(),
         drone.update_GYRO(),
         drone.update_NED()
