@@ -258,6 +258,8 @@ class Drone(vc.Vehicle):
         )  
 
     async def cam_start(self):
+        ## START CAMERA FUNCTIONALITY ##
+        print(f"Activate Drone Camera")
         user_data = user_app_callback_class()
         self.app = GStreamerDetectionApp(user_data, self.app_callback) 
         await a.to_thread(self.app.run())
@@ -283,6 +285,8 @@ class Drone(vc.Vehicle):
         # Convert pixel offsets to meters
         offset_x_m = pixel_x * meters_per_pixel_x
         offset_y_m = pixel_y * meters_per_pixel_y
+
+        print(f"Target is {offset_x_m} by {offset_y_m} away from camera center")
 
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
         return offset_x_m, offset_y_m
@@ -353,6 +357,7 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
+            print(f"Found item! analysis time!")
             label = detection.get_label()
             bbox = detection.get_bbox()
             confidence = detection.get_confidence()

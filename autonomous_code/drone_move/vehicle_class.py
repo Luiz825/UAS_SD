@@ -195,6 +195,7 @@ class Vehicle:
             mode = self.mode      
             if mode == "RTL" or mode == "Land":
                 self.active = False
+            print(f"Current mode: {self.mode}")
             await a.sleep(0.1) 
 
     def mode_activate(self, mode_e: VALID_MODES):
