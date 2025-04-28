@@ -7,7 +7,7 @@ from pymavlink import mavutil
 conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod with GND
 # the default'udp:localhost:14551 keep for simulations! need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
 
-async def main():
+async def main(drone):
     loop = asyncio.get_event_loop()    
 
     await asyncio.gather(
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
         print("After ten seconds this was written to the file in question")
         drone = dc.Drone(conn=conn)
-        print(drone.wait_4_msg("HEARTBEAT", block=True))
+        print(drone.wait_4_msg('HEARTBEAT', block=True))
 
         asyncio.run(main(drone))
         sys.stdout = original_stdout  # Restore stdout
