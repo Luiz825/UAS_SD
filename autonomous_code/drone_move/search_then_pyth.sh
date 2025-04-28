@@ -27,7 +27,8 @@ do
     #echo "$STATUS\n$TIMESTAMP" >> rp5_login_state.txt   
 
     if [ "$cutoff" -eq 1]; then
-        break             
+        break       
+    fi      
 done    
 
 if [ "$STATUS" = "Was not able to find /dev/ttyUSB0 sry :(" ]; then  
