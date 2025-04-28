@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
         print(f"After ten seconds this was written to the file in question {time.time()}")
         drone = dc.Drone(conn, 10)
-        print(f"{drone.wait_4_msg("HEARTBEAT", block=True)} {time.time()}")
+        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)} {time.time()}")
 
         asyncio.run(main(drone))
         sys.stdout = original_stdout  # Restore stdout
