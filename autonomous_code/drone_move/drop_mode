@@ -10,9 +10,7 @@ conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod wit
 
 async def main(drone):
     loop = asyncio.get_event_loop()    
-        
-    await asyncio.to_thread(drone.to_infinity_and_beyond, h=5)
-    await asyncio.to_thread(drone.waypoint_mv, x=2, y = 2)
+           
     await asyncio.gather(
         drone.change_mode(),
         drone.check_telem(),
