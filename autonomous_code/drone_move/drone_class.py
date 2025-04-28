@@ -199,7 +199,7 @@ class Drone(vc.Vehicle):
         ## CHANGE THE TARGET POS TO INPUT ##               
         if frame:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                0, self.ze_connectionthe_connection.target_system, 
+                0, self.ze_connection.target_system, 
                 self.ze_connection.the_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
@@ -209,7 +209,7 @@ class Drone(vc.Vehicle):
                 0, 0, 0, 0, 0, 0, yaw, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                0, self.ze_connectionthe_connection.target_system, 
+                0, self.ze_connection.target_system, 
                 self.ze_connection.the_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
