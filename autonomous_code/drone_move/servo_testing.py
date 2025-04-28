@@ -11,7 +11,7 @@ if __name__ == "__main__":
     if msg:
         print(msg)
         start = time.time()
-        for i in range (10, 11):
+        for i in range (8, 11):
             print(f"Check servo: {i}")
             drone.move_servo(i, 850)
             msg_0 = drone.wait_4_msg(str_type="COMMAND_ACK", time_out_sess=4, attempts=2)

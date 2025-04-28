@@ -17,7 +17,7 @@ async def main(drone):
         drone.change_mode(),
         drone.check_telem(),
         drone.crash_check(),
-        drone.cam_start(),
+        drone.cam_start_scan(),
         drone.land_question(),
         drone.payload_sequence(),
         drone.update_GPS(),
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         print(f"done or did nt work lol")
                 
     print(f"done or did nt work lol")
-
+    sys.exit()
     #need hy
 
 
