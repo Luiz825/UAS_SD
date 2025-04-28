@@ -26,7 +26,7 @@ do
 
     #echo "$STATUS\n$TIMESTAMP" >> rp5_login_state.txt   
 
-    if [ "$cutoff" -eq 1]; then
+    if [ "$cutoff" -eq 1 ]; then
         break       
     fi      
 done    
