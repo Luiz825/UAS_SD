@@ -160,7 +160,7 @@ class Drone(vc.Vehicle):
                 else:
                     start_ = 0
             await a.sleep(0.1)
-        while (self.y - tol) > tol:
+        while (self.NED.y - tol) > tol:
             continue
 
         self.master.mav.command_long_send(
@@ -203,9 +203,9 @@ class Drone(vc.Vehicle):
                 self.ze_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
-                (x + self.x), 
-                (y + self.y), 
-                ((z + abs(self.z))*-1),
+                (x + self.NED.x), 
+                (y + self.NED.y), 
+                ((z + abs(self.NED.z))*-1),
                 0, 0, 0, 0, 0, 0, yaw, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
@@ -213,9 +213,9 @@ class Drone(vc.Vehicle):
                 self.ze_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
-                (x + self.lon), 
-                (y + self.lat), 
-                (z + self.alt),
+                (x + self.GPS.x), 
+                (y + self.GPS.y), 
+                (z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, yaw, 0))   
             
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))                       
@@ -225,11 +225,11 @@ class Drone(vc.Vehicle):
         # tolerance default is 50mm
         self.mode = "RTL"
         target_x, target_y, target_z = 0, 0, 0
-        while not abs(self.x - target_x) < tol and abs(self.y - target_y) < tol and abs(self.z - target_z) < tol:
+        while not abs(self.NED.x - target_x) < tol and abs(self.NED.y - target_y) < tol and abs(self.NED.z- target_z) < tol:
             #tolerance same for all         
             if self.mode != "LAND" and self.battery < 10:
                 self.mode = "LAND"
-                target_x, target_y = self.x, self.y
+                target_x, target_y = self.NED.x, self.NED.y
         self.mode = "STABILIZE"
         await a.to_thread(self.set_wrist(0))                
 

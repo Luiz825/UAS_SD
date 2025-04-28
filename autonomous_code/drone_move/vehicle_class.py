@@ -95,10 +95,10 @@ class Vehicle:
         time.sleep(0.1)
         
         R = 6371000  # Earth radius in meters
-        phi1 = math.radians(self.lat)
+        phi1 = math.radians(self.GPS.y)
         phi2 = math.radians(lat2)
-        d_phi = math.radians(lat2 - (self.lat))
-        d_lambda = math.radians(lon2 - (self.lon))
+        d_phi = math.radians(lat2 - (self.GPS.y))
+        d_lambda = math.radians(lon2 - (self.GPS.x))
         a = math.sin(d_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))        
         return R * c    
