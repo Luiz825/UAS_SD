@@ -188,6 +188,7 @@ class Vehicle:
             hb_mode = None
             modes = {v: k for k, v in self.ze_connection.mode_mapping().items()}
             if msg_hb:
+                print(msg_hb)
                 hb_mode = msg_hb.custom_mode
             await a.sleep(0.1)
             if mode != self.mode:
