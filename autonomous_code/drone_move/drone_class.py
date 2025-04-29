@@ -262,7 +262,7 @@ class Drone(vc.Vehicle):
         ## START CAMERA FUNCTIONALITY ##
         print(f"Activate Drone Camera")
         user_data = user_app_callback_class()
-        self.app = GStreamerDetectionApp(user_data, self.app_callback_drop) 
+        self.app = GStreamerDetectionApp(self.app_callback_drop, user_data) 
         await a.to_thread(self.app.run())
         while self.active:
             await a.sleep(0.1)
@@ -273,7 +273,7 @@ class Drone(vc.Vehicle):
         ## START CAMERA FUNCTIONALITY ##
         print(f"Activate Drone Camera")
         user_data = user_app_callback_class()
-        self.app = GStreamerDetectionApp(user_data, self.app_callback) 
+        self.app = GStreamerDetectionApp(self.app_callback, user_data) 
         await a.to_thread(self.app.run())
         while self.active:
             await a.sleep(0.1)
