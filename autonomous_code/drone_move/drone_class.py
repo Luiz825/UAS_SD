@@ -302,7 +302,8 @@ class Drone(vc.Vehicle):
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
         return offset_x_m, offset_y_m
 
-    def app_callback_drop(self, pad, info, user_data):            
+    def app_callback_drop(self, pad, info, user_data): 
+        self.mode = 'GUIDED'           
         buffer = info.get_buffer()
         if buffer is None:
             return Gst.PadProbeReturn.OK
@@ -440,7 +441,8 @@ class Drone(vc.Vehicle):
         print(string_to_print)
         return Gst.PadProbeReturn.OK   
          
-    def app_callback_scan(self, pad, info, user_data):            
+    def app_callback_scan(self, pad, info, user_data):   
+        self.mode = 'GUIDED'         
         buffer = info.get_buffer()
         if buffer is None:
             return Gst.PadProbeReturn.OK
