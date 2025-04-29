@@ -10,6 +10,8 @@ import sys
 import csv
 from collections import deque
 #from sg_code.UAS.UAS_SD.kidkiller.movement import madagascar
+#from gpiozero import AngularServo
+from pymavlink import mavutil
 
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
@@ -18,20 +20,20 @@ from hailo_apps_infra.hailo_rpi_common import (
 )
 from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 
-
-##   DELETE ##
 # Initialize tracking variables
 prev_time = time.time()
 fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
 inference_time_history = deque(maxlen=10)  # Store last 10 inference times
 confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores
-
 # File paths for logging
-
-## DELETE ##
 fps_log_file = "fps_log.csv"
 inference_time_log_file = "inference_time_log.csv"
-
+master = mavutil.mavlink_connection('/dev/ttyUSB0',baud=57600)
+SERVO_NUM = 8
+PWM_MIN = 900
+PWM_MAX=1550
+start = 0
+GUIDED_MODE = 4
 # Create CSV files with headers if they don’t exist
 if not os.path.exists(fps_log_file):
     with open(fps_log_file, "w", newline="") as f:
@@ -133,36 +135,73 @@ def app_callback(pad, info, user_data):
     frame_center_y = height / 2
 
     for detection in detections:
+        if start == 0:
+            start = 1
+            master.mav.set_mode_send(
+                master.target_system,
+                mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                GUIDED_MODE
+            )
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-
+        #if lable is bullseye then do bottom if not then just acknolwdge and pass ontonext one
         x_min = bbox.xmin()
         x_max = bbox.xmax()
         y_min = bbox.ymin()
         y_max = bbox.ymax()
         w = bbox.width()
         h = bbox.height()
+        threshold_width = width * 0.4
+        threshold_height = height * 0.4
+
+        threshold_x_min = (width - threshold_width) /2
+        threshold_x_max = (width + threshold_width) /2
+        threshold_y_min = (height - threshold_height) /2
+        threshold_y_max = (height + threshold_height) /2
+
+        
+        
+        
         target_x = ((x_min + x_max) / 2) * 1000
         target_y = ((y_min + y_max) / 2) * 1000
 
-        print(f"Center of detection: {target_x, target_y}")
-        print(f"Center of frame: {frame_center_x, frame_center_y}")
+        #print(f"Center of detection: {target_x, target_y}")
+        #print(f"Center of frame: {frame_center_x, frame_center_y}")
 
+    
         # Movement decisions
         if target_x < frame_center_x:
             print("Move right")
             #madagascar(1)
-        else:
+        if target_x > frame_center_x:
             print("Move left")
             #madagascar(-1)
 
         if target_y < frame_center_y:
             print("Move up")
             #madagascar(1)
-        else:
+        if target_y > frame_center_y:
             print("Move down")
            # madagascar(-1)
+        if target_x == frame_center_x and target_y == frame_center_y:
+            print("Bullseye!")
+            #madagascar(0)
+
+        if (x_min* width >= threshold_x_min and x_max * width <= threshold_x_max and
+            y_min * height >= threshold_y_min and y_max * height <= threshold_y_max):
+            print("TARGET DROPPED !!!                                                  ")
+            master.mav.command_long_send(
+
+                master.target_system,
+                master.target_component,
+                mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                0,
+                SERVO_NUM,
+                PWM_MIN,
+                0,0,0,0,0
+            )
+
 
         # Get track ID
         track_id = 0
@@ -192,8 +231,10 @@ def app_callback(pad, info, user_data):
     return Gst.PadProbeReturn.OK
 
 if __name__ == "__main__":
+    print("waiting for heartbeat")
+    master.wait_heartbeat()
+    print(f"heart recieved system ID: {master.target_system}, comp ID: {master.target_component}")
+
     user_data = user_app_callback_class()
-    app = GStreamerDetectionApp(app_callback, user_data)            
+    app = GStreamerDetectionApp(app_callback, user_data)
     app.run()
-
-
