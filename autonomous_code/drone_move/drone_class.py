@@ -53,7 +53,7 @@ class Drone(vc.Vehicle):
             now = datetime.now()
             print(f"Battery: {self.battery}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")           
             print(f"Connection Quality: {avg_qual}% at {now.strftime('%Y-%m-%d %H:%M:%S')}")            
-            if (self.conn_qual > 40 and avg_qual > 40):
+            if (self.conn_qual > 80 and avg_qual > 80):
                 if start_ == 0:
                     #start_ = self.pi.get_current_tick()
                     start_ = time.time()
@@ -161,6 +161,7 @@ class Drone(vc.Vehicle):
                     start_ = 0
             await a.sleep(0.1)
         while (self.NED.y - tol) > tol:
+            await a.sleep(0.1)
             continue
 
         self.master.mav.command_long_send(
