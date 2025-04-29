@@ -273,7 +273,7 @@ class Drone(vc.Vehicle):
         ## START CAMERA FUNCTIONALITY ##
         print(f"Activate Drone Camera")
         user_data = user_app_callback_class()
-        self.app = GStreamerDetectionApp(user_data, self.app_callback_scan) 
+        self.app = GStreamerDetectionApp(user_data, self.app_callback) 
         await a.to_thread(self.app.run())
         while self.active:
             await a.sleep(0.1)
@@ -443,7 +443,7 @@ class Drone(vc.Vehicle):
         print(string_to_print)
         return Gst.PadProbeReturn.OK   
          
-    def app_callback_scan(self, pad, info, user_data):   
+    def app_callback(self, pad, info, user_data):   
                
         buffer = info.get_buffer()
         if buffer is None:
