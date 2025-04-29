@@ -16,7 +16,7 @@ import numpy as nP
 import hailo
 import sys
 from collections import deque #MAKE INTO ASYNC QUEUE
-from camera_q_class import user_app_callback_class, app_callback
+from camera_q_class import user_app_callback_class
 
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
