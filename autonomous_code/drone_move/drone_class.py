@@ -272,13 +272,17 @@ class Drone(vc.Vehicle):
     async def cam_start_scan(self):
         ## START CAMERA FUNCTIONALITY ##
         print(f"Activate Drone Camera")
-        user_data = user_app_callback_class()
-        self.app = GStreamerDetectionApp(self.app_callback, user_data) 
-        await a.to_thread(self.app.run())
-        while self.active:
+        if self.active:
             await a.sleep(0.1)
-            continue
-        return
+            user_data = user_app_callback_class()
+            try:
+                self.app = GStreamerDetectionApp(self.app_callback, user_data) 
+                await a.to_thread(self.app.run())       
+                return
+            except SystemExit as e:
+                print(f"GStreamDetectionApp initialization failed {e}")
+                return
+        
 
     def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=4608, cam_height_px=2592 , hfov_deg=66, vfov_deg=41):
         ## Convert pixel offset from center into meters on ground ###
