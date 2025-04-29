@@ -303,7 +303,7 @@ class Drone(vc.Vehicle):
         return offset_x_m, offset_y_m
 
     def app_callback_drop(self, pad, info, user_data): 
-        self.mode = 'GUIDED'           
+              
         buffer = info.get_buffer()
         if buffer is None:
             return Gst.PadProbeReturn.OK
@@ -369,6 +369,7 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
+            self.mode = 'GUIDED'     
             print(f"Found item! analysis time!")
             label = detection.get_label()
             bbox = detection.get_bbox()
@@ -442,7 +443,7 @@ class Drone(vc.Vehicle):
         return Gst.PadProbeReturn.OK   
          
     def app_callback_scan(self, pad, info, user_data):   
-        self.mode = 'GUIDED'         
+               
         buffer = info.get_buffer()
         if buffer is None:
             return Gst.PadProbeReturn.OK
@@ -508,6 +509,7 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
+            self.mode = 'GUIDED'  
             print(f"Found item! analysis time!")
             label = detection.get_label()
             bbox = detection.get_bbox()
