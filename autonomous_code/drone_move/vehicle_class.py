@@ -7,14 +7,14 @@ import math
 
 @dataclass
 class Vector:
-        x: None
-        y: None
-        z: None
+        x: float | None
+        y: float | None
+        z: float | None
 
 class Vehicle:
     VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
                           "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"]
-    VALID_MODES = Literal["GUIDED", "LAND", "RTL", "AUTO", "MANUAL"]
+    VALID_MODES = Literal["GUIDED", "LAND", "RTL", "AUTO", "MANUAL", "STABILIZE", "LOITER"]
     
 
     def __init__(self, conn='udp:localhost:14551', t=5):
@@ -112,6 +112,7 @@ class Vehicle:
         ## CHECK THE TELEMETRY DATA ##
         while self.active:  
             if self.mode == "MANUAL":
+                await a.sleep(0.01)
                 continue              
             t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", 
                                                  time_out_sess = self.t_sess, attempts = 2)
@@ -122,7 +123,7 @@ class Vehicle:
                 else:                        
                     self.battery = msg_stat.battery_remaining                      
                 self.prev_qual = self.conn_qual                                         
-                self.conn_qual = msg_stat.drop_rate_comm / 10 #in %   
+                #self.conn_qual = msg_stat.drop_rate_comm / 10 #in %   
             else:
                 if msg_stat == None:
                     self.conn_qual = 100    
@@ -138,7 +139,7 @@ class Vehicle:
     ## RAPS BERRY PI 5 DOES NOOOOOOOOOOOT SUPPORT PIGPIO ## 
         if time_out_sess is None:
             msg = self.ze_connection.recv_match(type = str_type, blocking = block)
-            return msg
+            return None, msg
         else:                    
             #temp = time_out_sess * 1e6/ attempts
             temp = time_out_sess/ attempts
@@ -176,7 +177,7 @@ class Vehicle:
                 self.GPS.x = msg.lat / 1e7
                 self.GPS.y = msg.lon / 1e7
                 self.GPS.z = msg.alt / 1000.0 
-            print(f"Current Coordinate: lat = {self.GPS.lat:.2f} m, lon = {self.GPS.lon:.2f} m, alt = {self.GPS.alt:.2f} m")    
+            print(f"Current Coordinate: lat = {self.GPS.x:.2f} m, lon = {self.GPS.y:.2f} m, alt = {self.GPS.z:.2f} m")    
             await a.sleep(0.1)
 
     async def change_mode(self):
@@ -185,15 +186,16 @@ class Vehicle:
         while self.active:
             msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
             hb_mode = None
+            modes = {v: k for k, v in self.ze_connection.mode_mapping().items()}
             if msg_hb:
                 hb_mode = msg_hb.custom_mode
             await a.sleep(0.1)
             if mode != self.mode:
                 self.mode_activate(self.mode)                
-            elif (hb_mode != None and hb_mode != self.mode):
-                self.mode = hb_mode                      
+            elif (hb_mode not in modes and hb_mode != self.mode):
+                self.mode = modes[hb_mode]                      
             mode = self.mode      
-            if mode == "RTL" or mode == "Land":
+            if mode == "RTL" or mode == "LAND":
                 self.active = False
             print(f"Current mode: {self.mode}")
             await a.sleep(0.1) 
