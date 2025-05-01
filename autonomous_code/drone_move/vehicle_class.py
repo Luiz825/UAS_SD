@@ -161,7 +161,7 @@ class Vehicle:
         ## HOLD UNTIL POS REACHED ##   
         while self.active:        
             rel = "LOCAL_POSITION_NED"         
-            msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
             print(f"Current Position: x = {self.NED.x:.2f} m, y = {self.NED.y:.2f} m, z = {self.NED.z:.2f} m")                
@@ -172,7 +172,7 @@ class Vehicle:
         while self.active:            
             rel = "GLOBAL_POSITION_INT"        
             # Wait for initial position
-            msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.GPS.x = msg.lat / 1e7
                 self.GPS.y = msg.lon / 1e7
@@ -184,7 +184,7 @@ class Vehicle:
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
         while self.active:
-            msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
+            t, msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
             hb_mode = None
             modes = {v: k for k, v in self.ze_connection.mode_mapping().items()}
             if msg_hb:

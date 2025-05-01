@@ -177,7 +177,7 @@ class Drone(vc.Vehicle):
             ## HOLD UNTIL POS REACHED ##  
             await a.sleep(0.1)         
             rel = "ATTITUDE"         
-            msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.roll = msg.roll * 100 / math.pi
                 self.pitch = msg.pitch * 100 / math.pi
