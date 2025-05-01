@@ -181,6 +181,8 @@ class Drone(vc.Vehicle):
             if msg:
                 self.roll = msg.roll * 100 / math.pi
                 self.pitch = msg.pitch * 100 / math.pi
+            else:
+                continue
             print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
         
     def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, yaw = None):

@@ -164,6 +164,8 @@ class Vehicle:
             t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
+            else:
+                continue
             print(f"Current Position: x = {self.NED.x:.2f} m, y = {self.NED.y:.2f} m, z = {self.NED.z:.2f} m")                
             await a.sleep(0.1)
         
@@ -177,6 +179,8 @@ class Vehicle:
                 self.GPS.x = msg.lat / 1e7
                 self.GPS.y = msg.lon / 1e7
                 self.GPS.z = msg.alt / 1000.0 
+            else:
+                continue
             print(f"Current Coordinate: lat = {self.GPS.x:.2f} m, lon = {self.GPS.y:.2f} m, alt = {self.GPS.z:.2f} m")    
             await a.sleep(0.1)
 
@@ -190,6 +194,8 @@ class Vehicle:
             if msg_hb:
                 print(msg_hb)
                 hb_mode = msg_hb.custom_mode
+            else: 
+                continue
             await a.sleep(0.1)
             if mode != self.mode:
                 self.mode_activate(self.mode)                
