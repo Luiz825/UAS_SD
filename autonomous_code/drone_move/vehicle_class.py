@@ -150,10 +150,11 @@ class Vehicle:
             start_ = time.time()
             #while (self.pi.get_current_tick()- start_) < time_out_sess:
             while (time.time()- start_) < time_out_sess:
-                msg = self.ze_connection.recv_match(type = str_type, blocking = False)
-                if msg is None:
-                    continue
-                elif msg:                
+                try:
+                    msg = self.ze_connection.recv_match(type = str_type, blocking = False)
+                except Exception as e:
+                    continue               
+                if msg:                
                     #return (self.pi.get_current_tick() - start_), msg
                     return (time.time()- start_), msg
                 time.sleep(0.1)
