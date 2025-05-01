@@ -541,7 +541,7 @@ class Drone(vc.Vehicle):
             target_y = ((y_min + y_max) / 2) * 1000
 
             offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
-            center_x, center_y = self.pixel_to_meters(pixel_x=center_x, pixel_y=center_y)
+            center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
 
             print(f"Center of detection: {target_x, target_y}")
             print(f"Center of frame: {frame_center_x, frame_center_y}")
