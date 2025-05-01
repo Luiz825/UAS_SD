@@ -272,7 +272,10 @@ class Drone(vc.Vehicle):
         return
 
     async def cam_start_scan(self):
-        ## START CAMERA FUNCTIONALITY ##
+        ## START CAMERA FUNCTIONALITY ##  
+        if not os.path.exists("/dev/video0"):
+            print("❌ Camera not detected at /dev/video0")
+            return      
         print(f"Activate Drone Camera")
         if self.active:
             await a.sleep(0.1)
