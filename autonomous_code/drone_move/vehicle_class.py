@@ -138,8 +138,11 @@ class Vehicle:
     # 
     ## RAPS BERRY PI 5 DOES NOOOOOOOOOOOT SUPPORT PIGPIO ## 
         if time_out_sess is None:
-            msg = self.ze_connection.recv_match(type = str_type, blocking = block)
-            return None, msg
+            try:
+                msg = self.ze_connection.recv_match(type = str_type, blocking = block)
+                return None, msg
+            except Exception as e:
+                return None, None
         else:                    
             #temp = time_out_sess * 1e6/ attempts
             temp = time_out_sess/ attempts
