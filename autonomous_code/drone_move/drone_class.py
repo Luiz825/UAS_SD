@@ -129,19 +129,19 @@ class Drone(vc.Vehicle):
                 file.flush()
                 await a.sleep(3)
     
-    async def payload_sequence(self, inst=8):
+    def payload_sequence(self, inst=8):
         ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
         while self.active:
             if self.mode == "MANUAL":
-                await a.sleep(0.01)
+                time.sleep(0.01)
                 continue  
             if self.drop:
-                await a.to_thread(self.move_servo, inst, 850)
-                await a.sleep(0.5)
-                await a.to_thread(self.move_servo, inst, 1550)
-                await a.sleep(0.5)
+                self.move_servo(inst, 850)
+                time.sleep(0.01)
+                self.move_servo(inst, 1550)
+                time.sleep(0.01)
                 self.drop = False
-            await a.sleep(0.1)
+            time.sleep(0.01)
 
     async def crash_check(self, tol = 0.5):
         ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND##
