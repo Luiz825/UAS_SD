@@ -215,7 +215,7 @@ class Drone(vc.Vehicle):
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
                 self.ze_connection.target_component, 
-                mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
                 4088, 
                 float(x + self.NED.x), 
                 float(y + self.NED.y), 
@@ -225,7 +225,7 @@ class Drone(vc.Vehicle):
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
                 self.ze_connection.target_component, 
-                mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
                 float(x + self.GPS.x), 
                 float(y + self.GPS.y), 
@@ -314,18 +314,19 @@ class Drone(vc.Vehicle):
         # Calculate real-world width and height of view
         half_hfov_rad = math.radians(hfov_deg / 2)
         half_vfov_rad = math.radians(vfov_deg / 2)
+        print(f"{half_hfov_rad} + {half_vfov_rad}")
 
         view_width_m = 2 * altitude_m * math.tan(half_hfov_rad)
         view_height_m = 2 * altitude_m * math.tan(half_vfov_rad)
-
+        print(f"{view_height_m} {view_width_m}")
         # Meters per pixel
         meters_per_pixel_x = view_width_m / cam_width_px
         meters_per_pixel_y = view_height_m / cam_height_px
-
+        print(f"{meters_per_pixel_x} + {meters_per_pixel_y}")
         # Convert pixel offsets to meters
         offset_x_m = pixel_x * meters_per_pixel_x
         offset_y_m = pixel_y * meters_per_pixel_y
-
+        print(f"{offset_x_m} + {offset_y_m}")
         print(f"Target is {offset_x_m} by {offset_y_m} away from camera center")
 
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
@@ -430,6 +431,9 @@ class Drone(vc.Vehicle):
             w = bbox.width()
             h = bbox.height()
 
+            print(f"Center of detection: {target_x, target_y}")
+            print(f"Center of frame: {frame_center_x, frame_center_y}")
+
             threshold_width = width * 0.4
             threshold_height = height * 0.4
 
@@ -442,10 +446,7 @@ class Drone(vc.Vehicle):
             target_y = ((y_min + y_max) / 2) * 1000
 
             offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
-            center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
-
-            print(f"Center of detection: {target_x, target_y}")
-            print(f"Center of frame: {frame_center_x, frame_center_y}")
+            center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)            
 
             centered_x = False
             centered_y = False
