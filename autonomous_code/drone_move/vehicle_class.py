@@ -12,10 +12,9 @@ class Vector:
         z: float
 
 class Vehicle:
-    VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
-                          "SYS_STATUS", "MISSION_COUNT", "MISSION_ITEM_INT", "MISSION_CURRENT"]
-    VALID_MODES = Literal["GUIDED", "LAND", "RTL", "AUTO", "MANUAL", "STABILIZE", "LOITER"]
-    
+    VALID_MESSAGES = Literal['HEARTBEAT', 'COMMAND_ACK', 'LOCAL_POSITION_NED', 'GLOBAL_POSITION_INT',
+                         'SYS_STATUS', 'MISSION_COUNT', 'MISSION_ITEM_INT', 'MISSION_CURRENT']
+    VALID_MODES = Literal['GUIDED', 'LAND', 'RTL', 'AUTO', 'MANUAL', 'STABILIZE', 'LOITER']
 
     def __init__(self, conn='udp:localhost:14551', t=5):
         self.GPS = Vector(0, 0, 0)
@@ -25,7 +24,7 @@ class Vehicle:
         self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)        
         self.conn_qual = 0 # the lower the better meaning no packets lost 
         self.prev_qual = 0   
-        self.mode = "STABILIZE"   
+        self.mode = 'STABILIZE'  
         self.active = True   
         self.waypoint_queue = a.Queue()      
         self.mission = False
@@ -44,14 +43,14 @@ class Vehicle:
             0, 0, 0, 0, 0, 0
         )        
         while self.active:
-            if self.mode != "AUTO":
+            if self.mode != 'AUTO':
                 await a.sleep(0.5)
                 continue            
             
             await a.sleep(0.1)
 
             # Get current waypoint index
-            msg_current = await a.to_thread(self.wait_4_msg, str_type="MISSION_CURRENT")
+            msg_current = await a.to_thread(self.wait_4_msg, str_type='MISSION_CURRENT')
             if not msg_current:
                 print("No mission yet ':{")
                 await a.sleep(1)
@@ -68,7 +67,7 @@ class Vehicle:
             )
 
             # Get the waypoint details
-            msg_wp = await a.to_thread(self.wait_4_msg, str_type="MISSION_ITEM_INT")
+            msg_wp = await a.to_thread(self.wait_4_msg, str_type='MISSION_ITEM_INT')
             if not msg_wp:
                 print("No mission item retrieved! :<")
                 await a.sleep(0.1)
@@ -111,7 +110,7 @@ class Vehicle:
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
         while self.active:  
-            if self.mode == "MANUAL":
+            if self.mode == 'MANUAL':
                 await a.sleep(0.01)
                 continue              
             t_stat, msg_stat = await a.to_thread(self.wait_4_msg, str_type="SYS_STATUS", 
@@ -158,13 +157,13 @@ class Vehicle:
                     #return (self.pi.get_current_tick() - start_), msg
                     return (time.time()- start_), msg
                 time.sleep(0.1)
-            print("No message")
+            print(f"No message {str_type}")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved      
 
     async def update_NED(self):
         ## HOLD UNTIL POS REACHED ##   
         while self.active:        
-            rel = "LOCAL_POSITION_NED"         
+            rel = 'LOCAL_POSITION_NED'         
             t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
@@ -176,7 +175,7 @@ class Vehicle:
     async def update_GPS(self):
         ## HOLD UNTIL POS REACHED ##     
         while self.active:            
-            rel = "GLOBAL_POSITION_INT"        
+            rel = 'GLOBAL_POSITION_INT'        
             # Wait for initial position
             t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
@@ -192,7 +191,7 @@ class Vehicle:
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
         while self.active:
-            t, msg_hb = await a.to_thread(self.wait_4_msg, str_type="HEARTBEAT")
+            t, msg_hb = await a.to_thread(self.wait_4_msg, str_type='HEARTBEAT')
             hb_mode = None
             modes = {v: k for k, v in self.ze_connection.mode_mapping().items()}
             if msg_hb:
@@ -206,7 +205,7 @@ class Vehicle:
             elif (hb_mode not in modes and hb_mode != self.mode):
                 self.mode = modes[hb_mode]                      
             mode = self.mode      
-            if mode == "RTL" or mode == "LAND":
+            if mode == 'RTL' or mode == 'LAND':
                 self.active = False
             print(f"Current mode: {self.mode}")
             await a.sleep(0.1) 
@@ -226,4 +225,4 @@ class Vehicle:
             self.ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
             0, arm_disarm, 0, 0, 0, 0, 0, 0)        
-        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True)) 
+        print(self.wait_4_msg(str_type='COMMAND_ACK', block = True)) 

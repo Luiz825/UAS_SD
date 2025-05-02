@@ -48,7 +48,7 @@ class Drone(vc.Vehicle):
         avg_qual = self.conn_qual  
         start_ = 0      
         while self.active:   
-            if self.mode == "MANUAL":
+            if self.mode == 'MANUAL':
                 await a.sleep(0.01)
                 continue           
             avg_qual = (avg_qual + self.prev_qual + self.conn_qual) / 3
@@ -63,7 +63,7 @@ class Drone(vc.Vehicle):
                 elif (time.time() - start_) > 25:
                     print(f"Comms issue!")
                     self.set_FComp()
-                    self.mode = "RTL"
+                    self.mode = 'RTL'
                     self.active = False 
                     start_ = 0
                 else:
@@ -116,7 +116,7 @@ class Drone(vc.Vehicle):
             while ((time.time() - start_)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
-                    tm, msg = await a.to_thread(self.wait_4_msg,"LOCAL_POSITION_NED", 
+                    tm, msg = await a.to_thread(self.wait_4_msg,'LOCAL_POSITION_NED', 
                                                 time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         break
@@ -124,7 +124,7 @@ class Drone(vc.Vehicle):
                     pos = f"x: {msg.x}, y: {msg.y}, z: {msg.z}"
                     scribe.writerow([timestamp, tm, pos])
                 else:
-                    tm, msg = await a.to_thread(self.wait_4_msg,"RAW_IMU", 
+                    tm, msg = await a.to_thread(self.wait_4_msg,'RAW_IMU', 
                                                 time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         print(f"Not talking @ {timestamp}!")
@@ -137,7 +137,7 @@ class Drone(vc.Vehicle):
     def payload_sequence(self, inst=8):
         ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
         while self.active:
-            if self.mode == "MANUAL":
+            if self.mode == 'MANUAL':
                 time.sleep(0.01)
                 continue  
             if self.drop:
@@ -161,7 +161,7 @@ class Drone(vc.Vehicle):
                 elif (time.time() - start_) > 2:
                     self.set_FComp()
                     self.active = False
-                    self.mode = "LAND"
+                    self.mode = 'LAND'
                     start_ = 0
                 else:
                     start_ = 0
@@ -182,7 +182,7 @@ class Drone(vc.Vehicle):
         while self.active:    
             ## HOLD UNTIL POS REACHED ##  
             await a.sleep(0.1)         
-            rel = "ATTITUDE"         
+            rel = 'ATTITUDE'         
             t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
             if msg:
                 self.roll = msg.roll * 100 / math.pi
@@ -197,8 +197,8 @@ class Drone(vc.Vehicle):
     #this is complete
     ## MOVE DRONE ##
         self.set_FComp()        
-        if self.mode != "GUIDED":
-            self.mode = "GUIDED"
+        if self.mode != 'GUIDED':
+            self.mode = 'GUIDED'
         # if all of these parameters can be organized in a list format
         # [j = getattr(str("pos.")+str(j) if j is None else j)]
         # i also don't really recall if you need to force cast thos strings
@@ -232,7 +232,7 @@ class Drone(vc.Vehicle):
                 float(z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, yaw, 0))   
             
-        print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))                       
+        print(self.wait_4_msg(str_type='COMMAND_ACK', block = True))                       
 
     async def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
@@ -243,16 +243,16 @@ class Drone(vc.Vehicle):
         self.vel_or_waypoint_mv(x=target_x, y=target_y, z=target_z)
         while not (abs(self.NED.x - target_x) < tol and abs(self.NED.y - target_y) < tol and abs(self.NED.z - target_z) < tol):
             #tolerance same for all         
-            if self.mode != "LAND" and self.battery < 10:
-                self.mode = "LAND"
+            if self.mode != 'LAND' and self.battery < 10:
+                self.mode = 'LAND'
                 target_x, target_y = self.NED.x, self.NED.y
-        self.mode = "STABILIZE"
+        self.mode = 'STABILIZE'
         await a.to_thread(self.set_wrist(0))                
 
         
     def to_infinity_and_beyond(self, h=0.25, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
-        self.mode = "GUIDED"
+        self.mode = 'GUIDED'
         self.set_wrist(1)
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system, 
@@ -292,6 +292,7 @@ class Drone(vc.Vehicle):
 
     async def cam_start_scan(self):
         ## START CAMERA FUNCTIONALITY ##  
+        await a.sleep(4)
         if not os.path.exists("/dev/video0"):
             print("Camera not detected at /dev/video0")
             return      
@@ -305,8 +306,8 @@ class Drone(vc.Vehicle):
                 return
             except SystemExit as e:
                 print(f"GStreamDetectionApp initialization failed {e}")
-                return
-        
+                self.active = False
+                return        
 
     def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=4608, cam_height_px=2592 , hfov_deg=66, vfov_deg=41):
         ## Convert pixel offset from center into meters on ground ###
@@ -349,6 +350,7 @@ class Drone(vc.Vehicle):
                     mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
                     0, 1, 0, 0, 0, 0, 0, 0)    
         print(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
+        self.mode = 'GUIDED'
 
     def app_callback(self, pad, info, user_data): 
               
@@ -463,7 +465,7 @@ class Drone(vc.Vehicle):
                 print(f"Dropping payload!")
                 self.payload_sequence()
                 time.sleep(0.5)
-                self.mode = "RTL"                
+                self.mode = 'RTL'                
             else:
                 print(f"Need to move to the payload!")
                 self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
