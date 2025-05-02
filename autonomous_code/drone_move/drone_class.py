@@ -7,7 +7,6 @@ import math
 import time
 import os
 import csv
-import math
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
@@ -37,6 +36,7 @@ class Drone(vc.Vehicle):
         # % is the % of packages lost                 
         self.drop = False  
         self.found_items = [0, 0, 0 ,0, 0, 0, 0, 0, 0, 0] 
+        self.target=False
         self.app = None
         self.prev_time = time.time()
         self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
@@ -62,12 +62,15 @@ class Drone(vc.Vehicle):
                 #elif (self.pi.get_current_tick() - start_) > 2500:
                 elif (time.time() - start_) > 25:
                     print(f"Comms issue!")
+                    self.set_FComp()
+                    self.mode = "RTL"
                     self.active = False 
                     start_ = 0
                 else:
                     start_ = 0
             elif self.battery is not None and self.battery < 20: 
                 #fix the battery monitor on the flight controller
+                self.set_FComp()
                 self.active = False
                 print(f"Battery low!")                    
             await a.sleep(1)
@@ -156,6 +159,7 @@ class Drone(vc.Vehicle):
                     start_ = time.time()
                 #elif (self.pi.get_current_tick() - start_) > 300:
                 elif (time.time() - start_) > 2:
+                    self.set_FComp()
                     self.active = False
                     self.mode = "LAND"
                     start_ = 0
@@ -165,7 +169,7 @@ class Drone(vc.Vehicle):
         while (self.NED.y - tol) > tol:
             await a.sleep(0.1)
             continue
-
+        self.set_wrist(0)
         self.master.mav.command_long_send(
             self.master.target_system,
             self.master.target_component,
@@ -192,6 +196,7 @@ class Drone(vc.Vehicle):
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
     #this is complete
     ## MOVE DRONE ##
+        self.set_FComp()        
         if self.mode != "GUIDED":
             self.mode = "GUIDED"
         # if all of these parameters can be organized in a list format
@@ -229,9 +234,11 @@ class Drone(vc.Vehicle):
     async def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
         # tolerance default is 50mm
+        self.set_FComp()
         self.mode = "RTL"
         target_x, target_y, target_z = 0, 0, 0
-        while not abs(self.NED.x - target_x) < tol and abs(self.NED.y - target_y) < tol and abs(self.NED.z- target_z) < tol:
+        self.vel_or_waypoint_mv(x=target_x, y=target_y, z=target_z)
+        while not (abs(self.NED.x - target_x) < tol and abs(self.NED.y - target_y) < tol and abs(self.NED.z - target_z) < tol):
             #tolerance same for all         
             if self.mode != "LAND" and self.battery < 10:
                 self.mode = "LAND"
@@ -321,6 +328,24 @@ class Drone(vc.Vehicle):
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
         return offset_x_m, offset_y_m
 
+    def set_FComp(self):
+        self.ze_connection.mav.command_long_send(
+                    self.ze_connection.target_system,
+                    self.ze_connection.target_component,
+                    mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                    0,
+                    0, 0, 0, 0, 0, 0, 0  # param1=0 pauses mission
+                ) 
+        print(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
+        self.target = True
+        ## MAV_CMD_NAV_GUIDED_ENABLE 
+        self.ze_connection.mav.command_long_send(
+                    self.ze_connection.target_system, 
+                    self.ze_connection.target_component, 
+                    mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
+                    0, 1, 0, 0, 0, 0, 0, 0)    
+        print(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
+
     def app_callback(self, pad, info, user_data): 
               
         buffer = info.get_buffer()
@@ -388,14 +413,8 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
-            ## MAV_CMD_NAV_GUIDED_ENABLE 
-            self.ze_connection.mav.command_long_send(
-                self.ze_connection.target_system, 
-                self.ze_connection.target_component, 
-                mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
-                0, 1, 0, 0, 0, 0, 0, 0) 
-
-            self.mode = 'GUIDED'     
+            if not self.target:
+                self.set_FComp()
             print(f"Found item! analysis time!")
             label = detection.get_label()
             bbox = detection.get_bbox()
@@ -537,12 +556,8 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
-            self.ze_connection.mav.command_long_send(
-                self.ze_connection.target_system, 
-                self.ze_connection.target_component, 
-                mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
-                0, 1, 0, 0, 0, 0, 0, 0) 
-            self.mode = 'GUIDED'  
+            if not self.target:
+                self.set_FComp()         
             print(f"Found item! analysis time!")
             label = detection.get_label()
             bbox = detection.get_bbox()
