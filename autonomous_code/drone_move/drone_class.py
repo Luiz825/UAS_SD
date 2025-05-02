@@ -215,7 +215,8 @@ class Drone(vc.Vehicle):
             self.waypoint_mv(frame, x, y, z, yaw)
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
-        ## CHANGE THE TARGET POS TO INPUT ##               
+        ## CHANGE THE TARGET POS TO INPUT ##    
+        print(f"x: {x} ({type(x)}), y: {y} ({type(y)}), z: {z} ({type(z)})")           
         if frame:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
@@ -457,6 +458,8 @@ class Drone(vc.Vehicle):
 
             centered_x = False
             centered_y = False
+            
+            print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")
 
             # Movement decisions
             if offset_x <= (center_x + 0.003) and offset_x >= (center_x - 0.003):
