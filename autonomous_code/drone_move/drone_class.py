@@ -227,9 +227,9 @@ class Drone(vc.Vehicle):
                 self.ze_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
-                (x + self.GPS.x), 
-                (y + self.GPS.y), 
-                (z + self.GPS.z),
+                float(x + self.GPS.x), 
+                float(y + self.GPS.y), 
+                float(z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, yaw, 0))   
             
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))                       
