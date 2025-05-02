@@ -7,9 +7,9 @@ import math
 
 @dataclass
 class Vector:
-        x: float | None
-        y: float | None
-        z: float | None
+        x: float
+        y: float
+        z: float
 
 class Vehicle:
     VALID_MESSAGES = Literal["HEARTBEAT", "COMMAND_ACK", "LOCAL_POSITION_NED", "GLOBAL_POSITION_INT",
