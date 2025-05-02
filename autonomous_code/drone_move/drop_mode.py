@@ -15,11 +15,11 @@ async def main(drone):
         drone.change_mode(),
         drone.check_telem(),
         drone.crash_check(),
-        drone.cam_start_drop(),
-        drone.land_question(),
         drone.update_GPS(),
         drone.update_GYRO(),
-        drone.update_NED()
+        drone.update_NED(),
+        drone.cam_start_drop(),
+        drone.land_question(),
     )
     
 
