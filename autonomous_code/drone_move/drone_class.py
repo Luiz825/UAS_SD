@@ -204,7 +204,10 @@ class Drone(vc.Vehicle):
         # i also don't really recall if you need to force cast thos strings
         time.sleep(1)
         if (x != None or y != None or z != None):
-            self.waypoint_mv(frame, float(x), float(y), float(z), float(yaw))
+            x = 0.0 if x is None else x
+            y = 0.0 if y is None else y
+            z = 0.0 if z is None else z
+            self.waypoint_mv(frame, x, y, z, yaw)
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
         ## CHANGE THE TARGET POS TO INPUT ##               
@@ -214,10 +217,10 @@ class Drone(vc.Vehicle):
                 self.ze_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED if frame == 1 else mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
                 4088, 
-                (x + self.NED.x), 
-                (y + self.NED.y), 
-                ((abs(z) * -1)),
-                0, 0, 0, 0, 0, 0, yaw, 0))   
+                float(x + self.NED.x), 
+                float(y + self.NED.y), 
+                float((abs(z) * -1)),
+               0, 0, 0, 0, 0, 0, yaw, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
