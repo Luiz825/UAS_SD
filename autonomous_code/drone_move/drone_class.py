@@ -480,12 +480,16 @@ class Drone(vc.Vehicle):
                 print(f"Dropping payload!")
                 self.payload_sequence()
                 time.sleep(0.5)
+                self.vel_or_waypoint_mv(z=5)            
+                time.sleep(0.5)
+                while abs(self.VEL.x) > 0.5 or abs(self.VEL.y) > 0.5 or abs(self.VEL.z) > 0.5:
+                    continue
                 self.mode = 'RTL'                
             else:
                 print(f"Need to move to the payload!")
                 self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
                 time.sleep(0.5)
-                while abs(self.VEL.x) > 0.5 and abs(self.VEL.y) > 0.5 and abs(self.VEL.z) > 0.5:
+                while abs(self.VEL.x) > 0.5 or abs(self.VEL.y) > 0.5 or abs(self.VEL.z) > 0.5:
                     continue
 
             # Get track ID
