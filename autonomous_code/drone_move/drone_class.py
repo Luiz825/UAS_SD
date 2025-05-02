@@ -216,7 +216,9 @@ class Drone(vc.Vehicle):
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
         ## CHANGE THE TARGET POS TO INPUT ##    
-        print(f"x: {x} ({type(x)}), y: {y} ({type(y)}), z: {z} ({type(z)})")           
+        print(f"x: {x} ({type(x)}), y: {y} ({type(y)}), z: {z} ({type(z)})")      
+        print(f"current x: {self.NED.x} ({type(self.NED.x)}), current y: {self.NED.y} ({type(self.NED.y)}), current z: {self.NED.z} ({type(self.NED.z)})")           
+        print(f"current LAT: {self.GPS.x} ({type(self.GPS.x)}), current LON: {self.GPS.y} ({type(self.GPS.y)}), current ALT: {self.GPS.z} ({type(self.GPS.z)})")           
         if frame:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
