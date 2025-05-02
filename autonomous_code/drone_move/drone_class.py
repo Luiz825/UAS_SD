@@ -228,7 +228,7 @@ class Drone(vc.Vehicle):
                 float(x + self.NED.x), 
                 float(y + self.NED.y), 
                 float((abs(z) * -1)),
-               0, 0, 0, 0, 0, 0, yaw, 0))   
+               0, 0, 0, 0, 0, 0, self.yaw, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
@@ -238,7 +238,7 @@ class Drone(vc.Vehicle):
                 float(x + self.GPS.x), 
                 float(y + self.GPS.y), 
                 float(z + self.GPS.z),
-                0, 0, 0, 0, 0, 0, yaw, 0))   
+                0, 0, 0, 0, 0, 0, self.yaw, 0))   
             
         print(self.wait_4_msg(str_type='COMMAND_ACK', block = True))                       
 
