@@ -5,6 +5,11 @@ from dataclasses import dataclass
 import time
 import math
 
+import builtins
+import functools
+
+print = functools.partial(builtins.print, flush=True)
+
 @dataclass
 class Vector:
         x: float
