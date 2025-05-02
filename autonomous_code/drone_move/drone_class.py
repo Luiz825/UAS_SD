@@ -204,7 +204,7 @@ class Drone(vc.Vehicle):
         # i also don't really recall if you need to force cast thos strings
         time.sleep(1)
         if (x != None or y != None or z != None):
-            self.waypoint_mv(frame, x, y, z, yaw)
+            self.waypoint_mv(frame, float(x), float(y), float(z), float(yaw))
         
     def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
         ## CHANGE THE TARGET POS TO INPUT ##               
