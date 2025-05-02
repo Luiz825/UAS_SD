@@ -429,10 +429,7 @@ class Drone(vc.Vehicle):
             y_min = bbox.ymin()
             y_max = bbox.ymax()
             w = bbox.width()
-            h = bbox.height()
-
-            print(f"Center of detection: {target_x, target_y}")
-            print(f"Center of frame: {frame_center_x, frame_center_y}")
+            h = bbox.height()            
 
             threshold_width = width * 0.4
             threshold_height = height * 0.4
@@ -444,6 +441,9 @@ class Drone(vc.Vehicle):
 
             target_x = ((x_min + x_max) / 2) * 1000
             target_y = ((y_min + y_max) / 2) * 1000
+
+            print(f"Center of detection: {target_x, target_y}")
+            print(f"Center of frame: {frame_center_x, frame_center_y}")
 
             offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
             center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)            
