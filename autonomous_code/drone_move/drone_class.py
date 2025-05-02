@@ -310,7 +310,7 @@ class Drone(vc.Vehicle):
 
     def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=4608, cam_height_px=2592 , hfov_deg=66, vfov_deg=41):
         ## Convert pixel offset from center into meters on ground ###
-        altitude_m=abs(self.NED.z)
+        altitude_m=abs(self.GPS.z)
         # Calculate real-world width and height of view
         half_hfov_rad = math.radians(hfov_deg / 2)
         half_vfov_rad = math.radians(vfov_deg / 2)
