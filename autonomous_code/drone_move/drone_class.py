@@ -32,9 +32,11 @@ class Drone(vc.Vehicle):
     def __init__(self, conn, t=10):
         super(Drone, self).__init__(conn=conn, t=t)        
         self.roll=0
-        self.pitch=0                                
+        self.pitch=0    
+        self.yaw = 0                            
         # % is the % of packages lost                 
-        self.drop = False   
+        self.drop = False  
+        self.found_items = [0, 0, 0 ,0, 0, 0, 0, 0, 0, 0] 
         self.app = None
         self.prev_time = time.time()
         self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
@@ -181,6 +183,7 @@ class Drone(vc.Vehicle):
             if msg:
                 self.roll = msg.roll * 100 / math.pi
                 self.pitch = msg.pitch * 100 / math.pi
+                self.yaw = msg.yaw
             else:
                 continue
             print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
@@ -208,7 +211,7 @@ class Drone(vc.Vehicle):
                 4088, 
                 (x + self.NED.x), 
                 (y + self.NED.y), 
-                ((z + abs(self.NED.z))*-1),
+                ((abs(z) * -1)),
                 0, 0, 0, 0, 0, 0, yaw, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
@@ -262,14 +265,20 @@ class Drone(vc.Vehicle):
 
     async def cam_start_drop(self):
         ## START CAMERA FUNCTIONALITY ##
+        if not os.path.exists("/dev/video0"):
+            print("Camera not detected at /dev/video0")
+            return      
         print(f"Activate Drone Camera")
-        user_data = user_app_callback_class()
-        self.app = GStreamerDetectionApp(self.app_callback_drop, user_data) 
-        await a.to_thread(self.app.run())
-        while self.active:
+        if self.active:
             await a.sleep(0.1)
-            continue
-        return
+            user_data = user_app_callback_class()
+            try:
+                self.app = GStreamerDetectionApp(self.app_callback, user_data) 
+                await a.to_thread(self.app.run())       
+                return
+            except SystemExit as e:
+                print(f"GStreamDetectionApp initialization failed {e}")
+                return     
 
     async def cam_start_scan(self):
         ## START CAMERA FUNCTIONALITY ##  
@@ -281,7 +290,7 @@ class Drone(vc.Vehicle):
             await a.sleep(0.1)
             user_data = user_app_callback_class()
             try:
-                self.app = GStreamerDetectionApp(self.app_callback, user_data) 
+                self.app = GStreamerDetectionApp(self.app_callback_scan, user_data) 
                 await a.to_thread(self.app.run())       
                 return
             except SystemExit as e:
@@ -312,7 +321,7 @@ class Drone(vc.Vehicle):
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
         return offset_x_m, offset_y_m
 
-    def app_callback_drop(self, pad, info, user_data): 
+    def app_callback(self, pad, info, user_data): 
               
         buffer = info.get_buffer()
         if buffer is None:
@@ -379,6 +388,13 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
+            ## MAV_CMD_NAV_GUIDED_ENABLE 
+            self.ze_connection.mav.command_long_send(
+                self.ze_connection.target_system, 
+                self.ze_connection.target_component, 
+                mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
+                0, 1, 0, 0, 0, 0, 0, 0) 
+
             self.mode = 'GUIDED'     
             print(f"Found item! analysis time!")
             label = detection.get_label()
@@ -404,7 +420,7 @@ class Drone(vc.Vehicle):
             target_y = ((y_min + y_max) / 2) * 1000
 
             offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
-            center_x, center_y = self.pixel_to_meters(pixel_x=center_x, pixel_y=center_y)
+            center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
 
             print(f"Center of detection: {target_x, target_y}")
             print(f"Center of frame: {frame_center_x, frame_center_y}")
@@ -413,18 +429,20 @@ class Drone(vc.Vehicle):
             centered_y = False
 
             # Movement decisions
-            if offset_x <= (center_x + 0.003) or offset_x >= (center_x - 0.003):
+            if offset_x <= (center_x + 0.003) and offset_x >= (center_x - 0.003):
                centered_x = True
-            if offset_y <= (center_y + 0.003) or offset_y >= (center_y - 0.003):
+            if offset_y <= (center_y + 0.003) and offset_y >= (center_y - 0.003):
                 centered_y = True        
 
             bullseye =  x_min * width >= threshold_x_min and x_max * width <= threshold_x_max and y_min * height >= threshold_y_min and y_max * height <= threshold_y_max            
             
             if centered_y and centered_x and abs(self.NED.z) <= 0.5 and bullseye:
+                print(f"Dropping payload!")
                 self.payload_sequence()
                 time.sleep(0.5)
                 self.mode = "RTL"                
             else:
+                print(f"Need to move to the payload!")
                 self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
                 time.sleep(0.5)
                 while abs(self.VEL.x) > 0.5 and abs(self.VEL.y) > 0.5 and abs(self.VEL.z) > 0.5:
@@ -452,7 +470,7 @@ class Drone(vc.Vehicle):
         print(string_to_print)
         return Gst.PadProbeReturn.OK   
          
-    def app_callback(self, pad, info, user_data):   
+    def app_callback_scan(self, pad, info, user_data):   
                
         buffer = info.get_buffer()
         if buffer is None:
@@ -519,6 +537,11 @@ class Drone(vc.Vehicle):
         frame_center_y = height / 2
 
         for detection in detections:
+            self.ze_connection.mav.command_long_send(
+                self.ze_connection.target_system, 
+                self.ze_connection.target_component, 
+                mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
+                0, 1, 0, 0, 0, 0, 0, 0) 
             self.mode = 'GUIDED'  
             print(f"Found item! analysis time!")
             label = detection.get_label()
@@ -547,23 +570,7 @@ class Drone(vc.Vehicle):
             center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
 
             print(f"Center of detection: {target_x, target_y}")
-            print(f"Center of frame: {frame_center_x, frame_center_y}")
-
-            centered_x = False
-            centered_y = False
-
-            # Movement decisions
-            if offset_x <= (center_x + 0.003) or offset_x >= (center_x - 0.003):
-               centered_x = True
-            if offset_y <= (center_y + 0.003) or offset_y >= (center_y - 0.003):
-                centered_y = True        
-
-            bullseye =  x_min * width >= threshold_x_min and x_max * width <= threshold_x_max and y_min * height >= threshold_y_min and y_max * height <= threshold_y_max            
-            
-            if bullseye:
-                self.payload_sequence()
-                time.sleep(0.5)
-                self.mode = "RTL"                            
+            print(f"Center of frame: {frame_center_x, frame_center_y}")                                       
 
             # Get track ID
             track_id = 0
