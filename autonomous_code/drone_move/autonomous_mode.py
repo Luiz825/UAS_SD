@@ -8,8 +8,7 @@ conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod wit
 # the default'udp:localhost:14551 keep for simulations! need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
 
 async def main(drone):
-    loop = asyncio.get_event_loop()    
-
+    loop = asyncio.get_event_loop() 
     await asyncio.gather(
         drone.change_mode(),
         drone.check_telem(),

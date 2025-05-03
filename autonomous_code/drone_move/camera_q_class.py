@@ -9,7 +9,7 @@ import time
 import sys
 import csv
 from collections import deque #MAKE INTO ASYNC QUEUE
-
+  
 #from sg_code.UAS.UAS_SD.kidkiller.movement import madagascar
 
 from hailo_apps_infra.hailo_rpi_common import (
