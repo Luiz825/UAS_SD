@@ -213,7 +213,7 @@ class Drone(vc.Vehicle):
                 continue
             print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
         
-    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None, yaw = None):
+    def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None):
     ## MOVE DRONE ##
 
     # in terms of meters can input x y or z or xv yv or zv or yaw any is optional but will not take in another input until 
@@ -229,9 +229,9 @@ class Drone(vc.Vehicle):
             x = 0.0 if x is None else x
             y = 0.0 if y is None else y
             z = 0.0 if z is None else z
-            self.waypoint_mv(frame, x, y, z, yaw)
+            self.waypoint_mv(frame, x, y, z)
         
-    def waypoint_mv(self, frame=1, x=0, y=0, z=0, yaw=0):
+    def waypoint_mv(self, frame=1, x=0, y=0, z=0):
         ## CHANGE THE TARGET POS TO INPUT ##    
 
         print(f"x: {x} ({type(x)}), y: {y} ({type(y)}), z: {z} ({type(z)})")      
@@ -246,7 +246,7 @@ class Drone(vc.Vehicle):
                 float(x + self.NED.x), 
                 float(y + self.NED.y), 
                 float((abs(z) * -1)),
-               0, 0, 0, 0, 0, 0, self.yaw, 0))   
+               0, 0, 0, 0, 0, 0, 0, 0))   
         else:
             self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
@@ -256,7 +256,7 @@ class Drone(vc.Vehicle):
                 float(x + self.GPS.x), 
                 float(y + self.GPS.y), 
                 float(z + self.GPS.z),
-                0, 0, 0, 0, 0, 0, self.yaw, 0))   
+                0, 0, 0, 0, 0, 0, 0, 0))   
             
         print(self.wait_4_msg(str_type='COMMAND_ACK', block = True))                       
 

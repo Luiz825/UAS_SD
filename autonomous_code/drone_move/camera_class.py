@@ -42,6 +42,7 @@ class Camera():
         self.dsn = d_or_s_or_n    
         self.drop = False  
         self.gps_points = [(0.0, 0.0) for _ in range(10)]
+        self.gps_target = (0.0, 0.0)
         self.rec = 0
         self.target=False
         self.app = None
@@ -204,9 +205,8 @@ class Camera():
 
             target_x = ((x_min + x_max) / 2) * 1000
             target_y = ((y_min + y_max) / 2) * 1000
-
-            offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
-            center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
+            
+            #center_x, center_y = self.pixel_to_meters(pixel_x=frame_center_x, pixel_y=frame_center_y)
 
             print(f"Center of detection: {target_x, target_y}")
             print(f"Center of frame: {frame_center_x, frame_center_y}")            
@@ -214,32 +214,31 @@ class Camera():
             if self.dsn == 2:                
                 centered_x = False
                 centered_y = False
+                                
+                bullseye =  (x_min * width >= threshold_x_min and 
+                             x_max * width <= threshold_x_max and 
+                             y_min * height >= threshold_y_min and 
+                             y_max * height <= threshold_y_max)
                 
-                print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")
-
-                # Movement decisions
-                if offset_x <= (center_x + 0.003) and offset_x >= (center_x - 0.003):
-                    centered_x = True
-                if offset_y <= (center_y + 0.003) and offset_y >= (center_y - 0.003):
-                    centered_y = True        
-
-                bullseye =  x_min * width >= threshold_x_min and x_max * width <= threshold_x_max and y_min * height >= threshold_y_min and y_max * height <= threshold_y_max            
-                
-                if centered_y and centered_x and abs(self.NED.z) <= 0.5 and bullseye:
+                if centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye:
                     print(f"Dropping payload!")
                     self.payload_sequence()
                     time.sleep(0.5)
-                    self.vel_or_waypoint_mv(z=5)            
+                    self.vel_or_waypoint_mv(z=5)    
+                    while abs(self.drone.VEL.z) > 5:
+                        time.sleep(0.1)
+                        continue        
                     time.sleep(0.5)
                     ## NEED TO SET EHIGHT HIGHER BEFORE GOING BACK ##                    
-                    self.drone.mode = 'RTL'                
-                else:
+                    self.drone.mode = 'RTL'   
+                    self.drone.active = False             
+                elif self.gps_points == (0.0, 0.0):
                     print(f"Need to move to the payload!")
-                    self.drone.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
-                    time.sleep(0.5)
-                while abs(self.drone.VEL.x) > 0.5 or abs(self.drone.VEL.y) > 0.5 or abs(self.drone.VEL.z) > 0.5:
-                        time.sleep(0.1)
-                        continue
+                    offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
+                    print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")               
+                    self.gps_points = self.meters_offset_to_gps(offset_y, offset_x)
+                    self.drone.vel_or_waypoint_mv(frame=0, x=self.gps_points[0], y=self.gps_points[1], z=550)            
+                    time.sleep(0.5)                
             elif self.dsn == 1:
                 print(f"Detected a 24 inch spot")
                 (lat, lon) = self.meters_offset_to_gps(offset_y, offset_x)
