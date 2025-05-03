@@ -24,6 +24,7 @@ async def main(drone):
 #this will run the following plans:
 '''
     1. execute mission 
+    
         1.a.navigation
     2.check telemetry data
 if either fail the will be sent to landing protoccol
