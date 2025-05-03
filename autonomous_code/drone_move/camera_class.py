@@ -232,11 +232,11 @@ class Camera():
                     ## NEED TO SET EHIGHT HIGHER BEFORE GOING BACK ##                    
                     self.drone.mode = 'RTL'   
                     self.drone.active = False             
-                elif self.gps_points == (0.0, 0.0):
+                elif self.gps_target == (0.0, 0.0):
                     print(f"Need to move to the target!")
                     offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
                     print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")               
-                    self.gps_points = self.meters_offset_to_gps(offset_y, offset_x)
+                    self.gps_target = self.meters_offset_to_gps(offset_y, offset_x)
                     self.drone.vel_or_waypoint_mv(frame=0, x=self.gps_points[0], y=self.gps_points[1], z=550)            
                     time.sleep(0.5)                
             elif self.dsn == 1:
