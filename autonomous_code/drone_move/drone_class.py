@@ -129,7 +129,7 @@ class Drone(vc.Vehicle):
             while ((time.time() - start_)/60) < loop_time_min:
                 now = datetime.now()             
                 if not conn:
-                    tm, msg = await a.to_thread(self.wait_4_msg,'LOCAL_POSITION_NED', 
+                    tm, msg = await a.to_thread(self.wait_4_msg,'LOCAL_POSITION_GPS', 
                                                 time_out_sess=self.t_sess, attempts=3)
                     if tm == self.t_sess:
                         break
@@ -348,6 +348,7 @@ class Drone(vc.Vehicle):
     def meters_offset_to_gps(self, offset_north, offset_east):
         ## CONVERT METERS INTO GPS COOR ##
 
+        time.sleep(5)
         R = 6378137.0  # Earth radius in meters
         dLat = offset_north / R
         dLon = offset_east / (R * math.cos(math.pi * self.GPS.x / 180))
@@ -518,6 +519,7 @@ class Drone(vc.Vehicle):
                         time.sleep(0.1)
                         continue
             elif self.dsn is 1:
+                print(f"Detected a 24 inch spot")
                 (lat, lon) = self.meters_offset_to_gps(offset_y, offset_x)
                 self.gps_points[self.rec] = (lat, lon)
                 self.rec = self.rec + 1
