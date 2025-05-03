@@ -211,7 +211,7 @@ class Camera():
             print(f"Center of detection: {target_x, target_y}")
             print(f"Center of frame: {frame_center_x, frame_center_y}")            
 
-            if self.dsn is 2:                
+            if self.dsn == 2:                
                 centered_x = False
                 centered_y = False
                 
@@ -243,7 +243,7 @@ class Camera():
                     while abs(self.VEL.x) > 0.5 or abs(self.VEL.y) > 0.5 or abs(self.VEL.z) > 0.5:
                         time.sleep(0.1)
                         continue
-            elif self.dsn is 1:
+            elif self.dsn == 1:
                 print(f"Detected a 24 inch spot")
                 (lat, lon) = self.meters_offset_to_gps(offset_y, offset_x)
                 print(f"Found here! {(lat, lon)}")
