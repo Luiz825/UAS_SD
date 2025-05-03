@@ -53,6 +53,24 @@ class Drone(vc.Vehicle):
         self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
         self.inference_time_history = deque(maxlen=10)  # Store last 10 inference times
         self.confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores     
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system,
+            self.ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,
+            mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED,  # message id for RAW_IMU
+            100000,  # 100,000 µs = 10Hz
+            0, 0, 0, 0, 0
+        )
+        self.ze_connection.mav.command_long_send(
+            self.ze_connection.target_system,
+            self.ze_connection.target_component,
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            0,
+            mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT,  # message id for RAW_IMU
+            100000,  # 100,000 µs = 10Hz
+            0, 0, 0, 0, 0
+        )
     
     async def land_question(self):
         ## CHECK IF NEED TO LAND ##
@@ -521,8 +539,10 @@ class Drone(vc.Vehicle):
             elif self.dsn is 1:
                 print(f"Detected a 24 inch spot")
                 (lat, lon) = self.meters_offset_to_gps(offset_y, offset_x)
-                self.gps_points[self.rec] = (lat, lon)
-                self.rec = self.rec + 1
+                print(f"Found here! {(lat, lon)}")
+                if self.gps_points[self.rec -1] != (lat, lon):
+                    self.gps_points[self.rec] = (lat, lon)
+                    self.rec = self.rec + 1
                 if self.rec >= 10:
                     self.active = False
 
