@@ -235,7 +235,7 @@ class Camera():
                     self.drone.mode = 'RTL'                
                 else:
                     print(f"Need to move to the payload!")
-                    self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
+                    self.drone.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
                     time.sleep(0.5)
                 while abs(self.drone.VEL.x) > 0.5 or abs(self.drone.VEL.y) > 0.5 or abs(self.drone.VEL.z) > 0.5:
                         time.sleep(0.1)
