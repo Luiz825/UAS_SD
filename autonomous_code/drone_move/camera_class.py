@@ -58,7 +58,7 @@ class Camera():
             print("Camera not detected at /dev/video0")
             return      
         print(f"Activate Drone Camera")
-        if self.active:
+        if self.drone.active:
             await a.sleep(0.1)
             user_data = user_app_callback_class()
             try:                
