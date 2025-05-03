@@ -17,8 +17,6 @@ import hailo
 import sys
 from collections import deque #MAKE INTO ASYNC QUEUE
 from camera_class import user_app_callback_class
-from scan_class import Scan
-from drop_class import Drop
 import builtins
 import functools
 
