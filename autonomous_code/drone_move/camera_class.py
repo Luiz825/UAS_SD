@@ -231,16 +231,13 @@ class Camera():
                     time.sleep(0.5)
                     self.vel_or_waypoint_mv(z=5)            
                     time.sleep(0.5)
-                    ## NEED TO SET EHIGHT HIGHER BEFORE GOING BACK ##
-                    while abs(self.VEL.x) > 0.5 or abs(self.VEL.y) > 0.5 or abs(self.VEL.z) > 0.5:
-                        time.sleep(0.1)
-                        continue
-                    self.mode = 'RTL'                
+                    ## NEED TO SET EHIGHT HIGHER BEFORE GOING BACK ##                    
+                    self.drone.mode = 'RTL'                
                 else:
                     print(f"Need to move to the payload!")
                     self.vel_or_waypoint_mv(x=offset_x, y=offset_y, z=0.5)            
                     time.sleep(0.5)
-                    while abs(self.VEL.x) > 0.5 or abs(self.VEL.y) > 0.5 or abs(self.VEL.z) > 0.5:
+                while abs(self.drone.VEL.x) > 0.5 or abs(self.drone.VEL.y) > 0.5 or abs(self.drone.VEL.z) > 0.5:
                         time.sleep(0.1)
                         continue
             elif self.dsn == 1:
@@ -251,7 +248,7 @@ class Camera():
                     self.gps_points[self.rec] = (lat, lon)
                     self.rec = self.rec + 1
                 if self.rec >= 10:
-                    self.active = False
+                    self.drone.active = False
 
             # Get track ID
             track_id = 0
