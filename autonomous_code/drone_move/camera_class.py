@@ -37,7 +37,7 @@ class user_app_callback_class(app_callback_class):
 class Camera():
     def __init__(self, drone, d_or_s_or_n=0):
         self.drone = drone
-        if d_or_s_or_n not in (0, 1, 2):
+        if d_or_s_or_n not in (0, 1):
             raise ValueError("mode must be an integer: 0, 1, or 2")
         self.dsn = d_or_s_or_n    
         self.drop = False  
@@ -233,7 +233,7 @@ class Camera():
                     self.drone.mode = 'RTL'   
                     self.drone.active = False             
                 elif self.gps_points == (0.0, 0.0):
-                    print(f"Need to move to the payload!")
+                    print(f"Need to move to the target!")
                     offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
                     print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")               
                     self.gps_points = self.meters_offset_to_gps(offset_y, offset_x)
