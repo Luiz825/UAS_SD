@@ -10,14 +10,12 @@ conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod wit
 
 async def main(drone):
     loop = asyncio.get_event_loop()    
-        
-    #await asyncio.to_thread(drone.to_infinity_and_beyond, h=5)
-    #await asyncio.to_thread(drone.waypoint_mv, x=2, y = 2)
+            
     await asyncio.gather(
         drone.change_mode(),
         drone.check_telem(),
         drone.crash_check(),
-        drone.cam_start_scan(),
+        drone.cam_start(),
         drone.land_question(),
         drone.update_GPS(),
         drone.update_GYRO(),
@@ -43,7 +41,7 @@ if __name__ == '__main__':
         sys.stdout = f
 
         print(f"After ten seconds this was written to the file in question {time.time()}")
-        drone = dc.Drone(conn, 10)
+        drone = dc.Drone(conn, 10, d_or_s_or_n=1)
         print(f"{drone.wait_4_msg('HEARTBEAT', block=True)} {time.time()}")
 
         asyncio.run(main(drone))
