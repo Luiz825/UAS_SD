@@ -340,6 +340,7 @@ class Drone(vc.Vehicle):
                     0, 1, 0, 0, 0, 0, 0, 0)    
         print(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
         self.mode = 'GUIDED'
+        self.mode_activate(mode_e='GUIDED')
 
     async def cam_start(self):
         ## START CAMERA FUNCTIONALITY ##
