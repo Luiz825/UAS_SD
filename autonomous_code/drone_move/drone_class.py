@@ -10,6 +10,7 @@ import csv
 from collections import deque #MAKE INTO ASYNC QUEUE
 import gi
 gi.require_version('Gst', '1.0')
+
 from gi.repository import Gst, GLib
 import os
 import numpy as nP
