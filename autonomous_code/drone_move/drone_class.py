@@ -522,7 +522,7 @@ class Drone(vc.Vehicle):
                     offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
                     print(f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})")               
                     self.gps_target = self.meters_offset_to_gps(offset_y, offset_x)
-                    self.vel_or_waypoint_mv(frame=0, x=self.gps_points[0], y=self.gps_points[1], z=550)            
+                    self.vel_or_waypoint_mv(frame=0, x=self.gps_target[0], y=self.gps_target[1], z=550)            
                     time.sleep(0.5)                
             elif self.dsn == 1:
                 print(f"Detected a 24 inch spot")
