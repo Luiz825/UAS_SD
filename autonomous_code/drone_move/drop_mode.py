@@ -20,6 +20,7 @@ async def main(drone):
         drone.update_GYRO(),
         drone.update_NED(),
         drone.cam_start(),
+        drone.set_FComp(),
         drone.land_question(),
     )
     
@@ -43,9 +44,8 @@ if __name__ == '__main__':
 
         print(f"After ten seconds this was written to the file in question {time.time()}")
         drone = dc.Drone(conn, 10, 2)
-        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)} {time.time()}")
-        #camera = cc.Camera(drone=drone, d_or_s_or_n=1)
-        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)} {time.time()}")
+        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)}")
+        #camera = cc.Camera(drone=drone, d_or_s_or_n=1)        
 
         asyncio.run(main(drone))
         sys.stdout = original_stdout  # Restore stdout

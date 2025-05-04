@@ -16,6 +16,7 @@ async def main(drone):
         drone.check_telem(),
         drone.crash_check(),
         drone.cam_start(),
+        drone.set_FComp(),
         drone.land_question(),
         drone.update_GPS(),
         drone.update_GYRO(),
