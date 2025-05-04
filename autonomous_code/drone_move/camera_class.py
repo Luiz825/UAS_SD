@@ -56,11 +56,14 @@ class Camera():
 
         await a.sleep(5)
         if not os.path.exists("/dev/video0"):
+            # if no god path for video to start then dont start
+            self.drone.active = False #cant start without video
             print("Camera not detected at /dev/video0")
             return      
         print(f"Activate Drone Camera")
         if self.drone.active:
             await a.sleep(0.1)
+            
             user_data = user_app_callback_class()
             try:                
                 self.app = GStreamerDetectionApp(self.app_callback, user_data) 
@@ -78,22 +81,18 @@ class Camera():
 
         # Calculate real-world width and height of view
         half_hfov_rad = math.radians(hfov_deg / 2)
-        half_vfov_rad = math.radians(vfov_deg / 2)
-        print(f"{half_hfov_rad} + {half_vfov_rad}")    
+        half_vfov_rad = math.radians(vfov_deg / 2)          
 
         view_width_m = 2 * altitude_m * math.tan(half_hfov_rad)
-        view_height_m = 2 * altitude_m * math.tan(half_vfov_rad)
-        print(f"{view_height_m} {view_width_m}")
+        view_height_m = 2 * altitude_m * math.tan(half_vfov_rad)        
 
         # Meters per pixel
         meters_per_pixel_x = view_width_m / cam_width_px
-        meters_per_pixel_y = view_height_m / cam_height_px
-        print(f"{meters_per_pixel_x} + {meters_per_pixel_y}")
+        meters_per_pixel_y = view_height_m / cam_height_px        
 
         # Convert pixel offsets to meters
         offset_x_m = pixel_x * meters_per_pixel_x
-        offset_y_m = pixel_y * meters_per_pixel_y
-        print(f"{offset_x_m} + {offset_y_m}")
+        offset_y_m = pixel_y * meters_per_pixel_y        
         print(f"Target is {offset_x_m} by {offset_y_m} away from camera center")
 
         ## Returns: (float, float): (x_meters, y_meters) movement in meters ##
@@ -109,6 +108,7 @@ class Camera():
         new_lat = self.drone.GPS.x + (dLat * 180 / math.pi)
         new_lon = self.drone.GPS.x + (dLon * 180 / math.pi)
 
+        ## Returns: (float, float): (latitude, longitude) for drone to go ##
         return new_lat, new_lon    
 
     def app_callback(self, pad, info, user_data):   
