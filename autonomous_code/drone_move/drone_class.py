@@ -272,7 +272,12 @@ class Drone(vc.Vehicle):
                 float(z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, 0, 0))   
             
-        print(self.wait_4_msg(str_type='COMMAND_ACK', block = True))                       
+        t, msg = None, None
+        while msg == None:
+            print(f"No movement acknowledgment yet :/")
+            t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block = False)                       
+            time.sleep(0.1)
+        print(msg)    
 
     async def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
