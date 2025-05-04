@@ -33,11 +33,24 @@ class Drone(vc.Vehicle):
     #VALID_MESSAGES = vc.Vehicle.VALID_MESSAGES + Literal[""]
     #VALID_MODES = vc.Vehicle.VALID_MODES + Literal[ "STABILIZE", "LOITER"]
 
-    def __init__(self, conn, t=10):
+    def __init__(self, conn, t=10, dsn=0):
         super(Drone, self).__init__(conn=conn, t=t)        
         self.roll=0
         self.pitch=0    
-        self.yaw = 0                            
+        self.yaw = 0             
+        if dsn not in (0, 1, 2):
+            raise ValueError("mode must be an integer: 0, 1, or 2")
+        self.dsn = dsn   
+        self.drop = False  
+        self.gps_points = [(0.0, 0.0) for _ in range(10)]
+        self.gps_target = (0.0, 0.0)
+        self.rec = 0
+        self.target=False
+        self.app = None
+        self.prev_time = time.time()
+        self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
+        self.inference_time_history = deque(maxlen=10)  # Store last 10 inference times
+        self.confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores               
         # % is the % of packages lost                         
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system,
