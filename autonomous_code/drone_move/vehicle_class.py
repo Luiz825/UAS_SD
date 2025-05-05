@@ -125,7 +125,8 @@ class Vehicle:
                     print(f"Battery info unavailable :< ")
                     self.battery=None
                 else:                        
-                    self.battery = msg_stat.battery_remaining                      
+                    self.battery = msg_stat.battery_remaining  
+                    await a.sleep(0.1)                    
                 self.prev_qual = self.conn_qual                                         
                 #self.conn_qual = msg_stat.drop_rate_comm / 10 #in %   
             else:
@@ -144,6 +145,7 @@ class Vehicle:
         if time_out_sess is None:
             try:
                 msg = self.ze_connection.recv_match(type = str_type, blocking = block)
+                a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)                    
                 return None, msg
             except Exception as e:
                 return None, None
@@ -203,6 +205,7 @@ class Vehicle:
                 print(msg_hb)
                 hb_mode = msg_hb.custom_mode
             else: 
+                await a.sleep(0.1)
                 continue
             await a.sleep(0.1)
             if mode != self.mode:
@@ -212,6 +215,7 @@ class Vehicle:
             mode = self.mode      
             if mode == 'RTL' or mode == 'LAND':
                 self.active = False
+                await a.sleep(0.1)
             print(f"Current mode: {self.mode}")
             await a.sleep(0.1) 
 
@@ -222,6 +226,7 @@ class Vehicle:
         # Send mode change request
         self.ze_connection.set_mode(mode_id)
         print(f"Mode changed to {mode_e}!") 
+        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
 
     def set_wrist(self, arm_disarm):
         ## SET THE DRONE TO ARMED OR DISARMED ##
@@ -231,3 +236,4 @@ class Vehicle:
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
             0, arm_disarm, 0, 0, 0, 0, 0, 0)        
         print(self.wait_4_msg(str_type='COMMAND_ACK', block = True)) 
+        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    

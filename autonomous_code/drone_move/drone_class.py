@@ -115,20 +115,24 @@ class Drone(vc.Vehicle):
                     print(f"Comms issue!")
                     self.FC = True
                     self.mode = 'RTL'
-                    self.active = False 
+                    await a.sleep(0.1)
+                    self.active = False
+                    await a.sleep(0.1) 
                     start_ = 0
                 else:
                     start_ = 0
             elif self.battery is not None and self.battery < 20: 
                 #fix the battery monitor on the flight controller
                 self.FC = True
+                await a.sleep(0.1)
                 self.active = False
+                await a.sleep(0.1)
                 print(f"Battery low!")                    
             await a.sleep(1)
         print(f"No longer active, ending processes")
         self.mission = False
         await a.to_thread(self.settle_down)
-        await a.sleep(2)
+        await a.sleep(1)
     
     async def log_test(self, filename = "FILE_log.csv", loop_time_min = 10, conn=True):
         ## LOG DATA ON THE POS ##
@@ -173,7 +177,7 @@ class Drone(vc.Vehicle):
 
         while self.active:
             if self.mode == 'MANUAL':
-                time.sleep(0.01)
+                a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
                 continue  
             if self.drop:
                 self.move_servo(inst, 850)
@@ -181,7 +185,7 @@ class Drone(vc.Vehicle):
                 self.move_servo(inst, 1550)
                 time.sleep(0.01)
                 self.drop = False
-            time.sleep(0.01)
+            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
 
     async def crash_check(self, tol = 0.5):
         ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND ##
@@ -275,12 +279,13 @@ class Drone(vc.Vehicle):
                 float(y + self.GPS.y), 
                 float(z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, 0, 0))   
+        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
         
         t, msg = None, None
         while msg == None:
             print(f"No movement acknowledgment yet :/")
             t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block = False)                       
-            time.sleep(0.1)
+            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
         print(msg)    
 
     def yaw_mv(self, yaw = 0):
@@ -297,7 +302,7 @@ class Drone(vc.Vehicle):
         while msg == None:
             print(f"No movement acknowledgment yet :/")
             t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block = False)                       
-            time.sleep(0.1)
+            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
         print(msg)
         
     async def settle_down(self, tol=0.05):
@@ -312,6 +317,7 @@ class Drone(vc.Vehicle):
             if self.mode != 'LAND' and self.battery < 10:
                 self.mode = 'LAND'
                 target_x, target_y = self.NED.x, self.NED.y
+            await a.sleep(0.1)
         self.mode = 'STABILIZE'
         await a.to_thread(self.set_wrist(0))                
 
@@ -439,7 +445,7 @@ class Drone(vc.Vehicle):
     def meters_offset_to_gps(self, offset_north, offset_east):
         ## CONVERT METERS INTO GPS COOR ##
 
-        time.sleep(2.5)
+        a.run_coroutine_threadsafe(a.sleep(2), loop=self.loop) 
         R = 6378137.0  # Earth radius in meters
         dLat = offset_north / R
         dLon = offset_east / (R * math.cos(math.pi * self.GPS.x / 180))
@@ -566,20 +572,21 @@ class Drone(vc.Vehicle):
                 if centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye and label == "Bullseye":
                     string_to_print += (f"Dropping payload!\n")
                     self.payload_sequence()
-                    time.sleep(0.5)
+                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
                     self.vel_or_waypoint_mv(z=5)    
                     while abs(self.VEL.z) > 5:
-                        time.sleep(0.1)
+                        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
                         continue        
                     time.sleep(0.5)
-                    ## NEED TO SET HEIGHT HIGHER BEFORE GOING BACK ##  
-                                        
+                    ## NEED TO SET HEIGHT HIGHER BEFORE GOING BACK ##                                          
                     self.mode = 'RTL'   
-                    self.active = False             
+                    a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)                                                 
                 elif self.gps_target == (0.0, 0.0) and label == "Bullseye":
-                    string_to_print += (f"Need to move to the target!\n")                                                                        
+                    string_to_print += (f"Need to move to the target!\n")      
+                    self.FC = True
+                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop)                                                                   
                     self.vel_or_waypoint_mv(frame=0, x=self.gps_target[0], y=self.gps_target[1], z=550)            
-                    time.sleep(0.5)  
+                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
 
             elif self.dsn == 1:
                 string_to_print += (f"Detected a spot!\n")
@@ -596,6 +603,8 @@ class Drone(vc.Vehicle):
                         angle_to_target_rad = math.radians(angle_to_target_deg)
                         #based on current yaw grab this
                         desired_yaw = float(self.yaw + math.pi + angle_to_target_rad) % (2 * math.pi)
+                        self.FC = True
+                        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
                         self.yaw_mv(yaw=desired_yaw)
                 if self.dict_gps[label] == (0.0, 0.0):                    
                     self.dict_gps[label] = (lat, lon)   
@@ -620,10 +629,10 @@ class Drone(vc.Vehicle):
                 f"FPS: {avg_fps} | Inference Time: {avg_inference_time} ms | Avg Confidence: {avg_confidence}\n"
             )
         # Log FPS, inference time, and confidence score to CSV files  
-        a.run_coroutine_threadsafe(a.sleep(0), loop=self.loop)      
+        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop)      
         if frame_count % 5 == 0:            
-            string_t_print += (f"{time.strftime("%Y-%m-%d %H:%M:%S")}\n")
+            print(string_to_print)
         
-        print(string_to_print)
+        
         return Gst.PadProbeReturn.OK        
     
