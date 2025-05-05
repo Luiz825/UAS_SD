@@ -618,9 +618,9 @@ class Drone(vc.Vehicle):
         string_to_print += (
                 f"FPS: {avg_fps} | Inference Time: {avg_inference_time} ms | Avg Confidence: {avg_confidence}\n"
             )
-        # Log FPS, inference time, and confidence score to CSV files        
-        if frame_count % 5 == 0:
-            a.run_coroutine_threadsafe(a.sleep(0), loop=self.loop)
+        # Log FPS, inference time, and confidence score to CSV files  
+        a.run_coroutine_threadsafe(a.sleep(0), loop=self.loop)      
+        if frame_count % 5 == 0:            
             string_t_print += (f"{time.strftime("%Y-%m-%d %H:%M:%S")}\n")
         
         print(string_to_print)
