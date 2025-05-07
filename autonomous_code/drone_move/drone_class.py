@@ -500,12 +500,13 @@ class Drone(vc.Vehicle):
                              y_min * height >= threshold_y_min and 
                              y_max * height <= threshold_y_max)
                 
-                if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye) or self.demo:
+                if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye):
                     string_to_print += (f"Dropping payload!\n")
                     self.payload_sequence()
                     time.sleep((0.01)) 
-                    self.vel_or_waypoint_mv(z=5)    
-                    while abs(self.VEL.z) > 5:
+                    self.vel_or_waypoint_mv(z=5)  
+
+                    while abs(self.VEL.z) > 5 and not self.demo:
                         time.sleep((0.01)) 
                         continue        
                     time.sleep(0.01)
