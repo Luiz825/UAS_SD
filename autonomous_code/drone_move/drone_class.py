@@ -502,10 +502,9 @@ class Drone(vc.Vehicle):
                 if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye) or self.demo:
                     print(f"Dropping payload!\n")
                     self.move_servo(inst=8, pwm=850)
-                    time.sleep(0.01)
+                    time.sleep(1)
                     self.move_servo(inst=8, pwm=1550)
-                    time.sleep(0.01)
-                    time.sleep((0.01)) 
+                    time.sleep(1)        
                     self.vel_or_waypoint_mv(z=5)  
                     while abs(self.VEL.z) > 5 and not self.demo:
                         time.sleep((0.01)) 
