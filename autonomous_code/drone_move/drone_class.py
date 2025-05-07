@@ -499,7 +499,7 @@ class Drone(vc.Vehicle):
                              y_min * height >= threshold_y_min and 
                              y_max * height <= threshold_y_max)
                 
-                if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye):
+                if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye) or demo:
                     string_to_print += (f"Dropping payload!\n")
                     self.drop = True
                     time.sleep((0.01)) 
