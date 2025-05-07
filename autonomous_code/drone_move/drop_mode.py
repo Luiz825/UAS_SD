@@ -1,35 +1,31 @@
 import drone_class as dc
-import camera_class as cc
 import asyncio
 import sys
 import time
-from pymavlink import mavutil 
+from pymavlink import mavutil
+import threading
 
 conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod with GND
 # the default'udp:localhost:14551 keep for simulations! 
 # need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
 
-async def main(drone):
+def main(drone):
     loop = asyncio.get_event_loop()    
-           
-    await asyncio.gather(
-        drone.change_mode(),
-        drone.check_telem(),
-        drone.crash_check(),
-        drone.update_GPS(),
-        drone.update_GYRO(),
-        drone.update_NED(),
-        drone.cam_start(),
-        drone.set_FComp(),
-        drone.land_question(),
-    )
-    
+    try:        
+        loop.run_until_complete(asyncio.gather(            
+            drone.check_telem(),
+            drone.crash_check(),            
+            drone.land_question(),
+        ))    
+    finally:
+        loop.close()
 
 #this will run the following plans:
 '''
     1. execute mission 
         1.a.navigation
     2.check telemetry data
+
 if either fail the will be sent to landing protoccol
 will begin by starting takeoff protoccol
 Question: should it just go straight to landing OR be another async 
@@ -42,18 +38,16 @@ if __name__ == '__main__':
         original_stdout = sys.stdout  # Save original stdout
         sys.stdout = f
 
-        print(f"After ten seconds this was written to the file in question {time.time()}")
-        drone = dc.Drone(conn, 10, 2)
-        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)}")
-        #camera = cc.Camera(drone=drone, d_or_s_or_n=1)        
+        print(f"After two seconds this was written to the file in question {time.time()}")
+        drone = dc.Drone(conn, 10, 1)
+        print(f"{drone.wait_4_msg('HEARTBEAT', block=True)}")      
 
-        asyncio.run(main(drone))
+        camera_thread = threading.Thread(target=drone.cam_start)
+        mode_thread = threading.Thread(target=drone.change_mode)
+        specs_thread = threading.Thread(target=drone.update_specs)
+        async_thread = threading.Thread(target=main, args=drone)
+
         sys.stdout = original_stdout  # Restore stdout
         print(f"done or did nt work lol")
                 
     print(f"done or did nt work lol")
-
-    #need hy
-
-
-

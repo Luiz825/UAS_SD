@@ -11,7 +11,6 @@ import cv2
 from collections import deque #MAKE INTO ASYNC QUEUE
 import gi
 gi.require_version('Gst', '1.0')
-
 from gi.repository import Gst, GLib
 import os
 import numpy as nP
@@ -35,16 +34,10 @@ class Drone(vc.Vehicle):
     #VALID_MESSAGES = vc.Vehicle.VALID_MESSAGES + Literal[""]
     #VALID_MODES = vc.Vehicle.VALID_MODES + Literal[ "STABILIZE", "LOITER"]
 
-    def __init__(self, conn, t=10, dsn=0):
-        super(Drone, self).__init__(conn=conn, t=t)        
-        self.roll=0
-        self.pitch=0    
-        self.yaw = 0             
-        if dsn not in (0, 1, 2):
-            raise ValueError("mode must be an integer: 0, 1, or 2")
-        self.dsn = dsn   
+    def __init__(self, conn, t=10, demo=0):
+        super(Drone, self).__init__(conn=conn, t=t)                                    
         self.drop = False  
-        self.gps_points = [(0.0, 0.0) for _ in range(10)]
+        self.demo = demo
         self.dict_gps = {"Bullseye": (0.0, 0.0), "48_target": [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)], "24_target1": (0.0, 0.0), "24_target4": (0.0, 0.0), "24_rtarget5": (0.0, 0.0)}
         self.gps_target = (0.0, 0.0)
         self.rec = 0
@@ -177,7 +170,7 @@ class Drone(vc.Vehicle):
 
         while self.active:
             if self.mode == 'MANUAL':
-                a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+                time.sleep((0.1))    
                 continue  
             if self.drop:
                 self.move_servo(inst, 850)
@@ -185,7 +178,7 @@ class Drone(vc.Vehicle):
                 self.move_servo(inst, 1550)
                 time.sleep(0.01)
                 self.drop = False
-            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+            time.sleep((0.1))    
 
     async def crash_check(self, tol = 0.5):
         ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND ##
@@ -209,7 +202,7 @@ class Drone(vc.Vehicle):
         while (self.NED.y - tol) > tol:
             await a.sleep(0.1)
             continue
-        self.set_wrist(0)
+        a.to_thread(self.set_wrist(0))
         self.master.mav.command_long_send(
             self.master.target_system,
             self.master.target_component,
@@ -217,22 +210,7 @@ class Drone(vc.Vehicle):
             0,  # Confirmation
             1,  # Termination ON
             0, 0, 0, 0, 0, 0)
-    
-    async def update_GYRO(self):
-        ## UPDATE GRYO SPEC OF THE DRONE CONTINOUSLY ##
 
-        while self.active:    
-            ## HOLD UNTIL POS REACHED ##  
-            await a.sleep(0.1)         
-            rel = 'ATTITUDE'         
-            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
-            if msg:
-                self.roll = msg.roll * 100 / math.pi
-                self.pitch = msg.pitch * 100 / math.pi
-                self.yaw = msg.yaw
-            else:
-                continue
-            print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
         
     def vel_or_waypoint_mv(self, frame = 1, x = None, y = None, z = None):
     ## MOVE DRONE ##
@@ -279,35 +257,34 @@ class Drone(vc.Vehicle):
                 float(y + self.GPS.y), 
                 float(z + self.GPS.z),
                 0, 0, 0, 0, 0, 0, 0, 0))   
-        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+        time.sleep((0.1))    
         
         t, msg = None, None
         while msg == None:
             print(f"No movement acknowledgment yet :/")
             t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block = False)                       
-            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+            time.sleep((0.1))    
         print(msg)    
 
     def yaw_mv(self, yaw = 0):
         ## CHANGE YAW ONLY AS DESIRED
-
+        self.FC = True
         print(f"Current yaw: {self.yaw}")                
         self.ze_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
                 0, self.ze_connection.target_system, 
                 self.ze_connection.target_component, 
                 mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
-                2552,  #ignore everything BUT yaw
-                0, 0, 0, 0, 0, 0, 0, float(yaw), 0))           
+                0b0001101111111111,  #ignore everything BUT yaw
+                0, 0, 0, 0, 0, 0, 0, 0, 0, float(yaw), 0))           
         t, msg = None, None
         while msg == None:
             print(f"No movement acknowledgment yet :/")
             t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block = False)                       
-            a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+            time.sleep(0.1)
         print(msg)
         
     async def settle_down(self, tol=0.05):
         ## SETT DRONE BACK TO LAND ##
-
         # tolerance default is 50mm
         self.FC = True
         self.mode = "RTL"
@@ -324,14 +301,14 @@ class Drone(vc.Vehicle):
         
     def to_infinity_and_beyond(self, h=0.25, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
-
+        self.FC = True
         self.mode = 'GUIDED'
         self.set_wrist(1)
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system, 
             self.ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 
-            0, 0, 0, 0, yaw, 0, 0, h)    
+            0, 0, 0, 0, float(self.yaw), 0, 0, h)    
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))          
 
     def move_servo(self, inst=8, pwm=1500):
@@ -347,59 +324,10 @@ class Drone(vc.Vehicle):
         )  
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))
 
-    async def set_FComp(self):
-        ## ALLOW FCOMP TO CONTROL THE DRONE OR REVERT BACK TO GCS ##
-        set_FC = False
-        set_GCS = False
-        while self.active:
-            await a.sleep(0.5)
-            if self.FC and not set_FC:
-                self.ze_connection.mav.command_long_send(
-                            self.ze_connection.target_system,
-                            self.ze_connection.target_component,
-                            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
-                            0,
-                            0, 0, 0, 0, 0, 0, 0  # param1=0 pauses mission
-                        ) 
-                t, msg = await a.to_thread(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
-                print(msg)                
-                ## MAV_CMD_NAV_GUIDED_ENABLE 
-                self.ze_connection.mav.command_long_send(
-                            self.ze_connection.target_system, 
-                            self.ze_connection.target_component, 
-                            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
-                            0, 1, 0, 0, 0, 0, 0, 0)    
-                t, msg = await a.to_thread(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
-                print(msg)
-                self.mode = 'GUIDED'                 
-                set_FC = True
-                set_GCS = False
-
-            elif not self.FC and not set_GCS:
-                self.ze_connection.mav.command_long_send(
-                            self.ze_connection.target_system,
-                            self.ze_connection.target_component,
-                            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
-                            0,
-                            1, 0, 0, 0, 0, 0, 0  # param1=1 resumes mission
-                        ) 
-                t, msg = await a.to_thread(self.wait_4_msg(str_type='COMMAND_ACK', block=True))
-                print(msg)            
-                ## MAV_CMD_NAV_GUIDED_ENABLE 
-                self.ze_connection.mav.command_long_send(
-                            self.ze_connection.target_system, 
-                            self.ze_connection.target_component, 
-                            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
-                            0, 0, 0, 0, 0, 0, 0, 0)    
-                t, msg = await a.to_thread(self.wait_4_msg(str_type='COMMAND_ACK', block=True)) 
-                print(msg)                     
-                set_GCS = True
-                set_FC = False
-
-    async def cam_start(self):
+    def cam_start(self):
         ## START CAMERA FUNCTIONALITY ##
 
-        await a.sleep(5)
+        time.sleep(5)
         if not os.path.exists("/dev/video0"):
             # if no god path for video to start then dont start
             self.active = False #cant start without video
@@ -407,12 +335,12 @@ class Drone(vc.Vehicle):
             return      
         print(f"Activate Drone Camera")
         if self.active:
-            await a.sleep(0.1)
-            
+            time.sleep(0.1)            
             user_data = user_app_callback_class()
+
             try:                
                 self.app = GStreamerDetectionApp(self.app_callback, user_data) 
-                await a.to_thread(self.app.run())       
+                self.app.run()
                 return
             except SystemExit as e:
                 print(f"GStreamDetectionApp initialization failed {e}")
@@ -421,8 +349,7 @@ class Drone(vc.Vehicle):
     def pixel_to_meters(self, pixel_x, pixel_y, cam_width_px=3280, cam_height_px=2464 , hfov_deg=62.2, vfov_deg=48.8):
         ## CONVERT PIXEL OFFSET OF TARGET TO CENTER OF CAMERA ###
 
-        altitude_m=float(self.GPS.z)
-        print(f'altitude_m: {altitude_m} ({type(altitude_m)})', flush=True)
+        altitude_m=float(-self.NED.z)        
 
         # Calculate real-world width and height of view
         half_hfov_rad = math.radians(hfov_deg / 2)
@@ -445,7 +372,7 @@ class Drone(vc.Vehicle):
     def meters_offset_to_gps(self, offset_north, offset_east):
         ## CONVERT METERS INTO GPS COOR ##
 
-        a.run_coroutine_threadsafe(a.sleep(2), loop=self.loop) 
+        time.sleep((2)) 
         R = 6378137.0  # Earth radius in meters
         dLat = offset_north / R
         dLon = offset_east / (R * math.cos(math.pi * self.GPS.x / 180))
@@ -548,9 +475,10 @@ class Drone(vc.Vehicle):
 
             string_to_print += (f"Center of detection: {target_x, target_y}\n")
             string_to_print += (f"Center of frame: {frame_center_x, frame_center_y}\n")    
+            string_to_print += (f"Height: {self.NED.z} ({type(self.NED.z)})")
 
             offset_x, offset_y = self.pixel_to_meters(pixel_x=target_x, pixel_y=target_y)
-            string_to_print += (f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})\n")      
+            string_to_print += (f"offset_x: {offset_x} ({type(offset_x)}), offset_y: {offset_y} ({type(offset_y)})\n")                  
             self.gps_target = self.meters_offset_to_gps(offset_y, offset_x)
             string_to_print += (f"gps longitude: {self.gps_target[0]} ({type(self.gps_target[0])}), gps latitude: {self.gps_target[0]} ({type(self.gps_target[1])})\n")    
 
@@ -560,7 +488,7 @@ class Drone(vc.Vehicle):
             if len(track) == 1:
                 track_id = track[0].get_id()
 
-            if self.dsn == 2:                
+            if label == 'Bullseye':                
                 centered_x = False
                 centered_y = False
                                 
@@ -569,26 +497,25 @@ class Drone(vc.Vehicle):
                              y_min * height >= threshold_y_min and 
                              y_max * height <= threshold_y_max)
                 
-                if centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye and label == "Bullseye":
+                if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye) or self.demo:
                     string_to_print += (f"Dropping payload!\n")
                     self.payload_sequence()
-                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
+                    time.sleep((0.01)) 
                     self.vel_or_waypoint_mv(z=5)    
                     while abs(self.VEL.z) > 5:
-                        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
+                        time.sleep((0.01)) 
                         continue        
-                    time.sleep(0.5)
+                    time.sleep(0.01)
                     ## NEED TO SET HEIGHT HIGHER BEFORE GOING BACK ##                                          
                     self.mode = 'RTL'   
-                    a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)                                                 
-                elif self.gps_target == (0.0, 0.0) and label == "Bullseye":
-                    string_to_print += (f"Need to move to the target!\n")      
-                    self.FC = True
-                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop)                                                                   
+                    time.sleep(0.1)                                              
+                elif self.dict_gps[label] == (0.0, 0.0):
+                    string_to_print += (f"Need to move to the target!\n")                          
+                    time.sleep((0.01))                                                                   
                     self.vel_or_waypoint_mv(frame=0, x=self.gps_target[0], y=self.gps_target[1], z=550)            
-                    a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
+                    time.sleep((0.01)) 
 
-            elif self.dsn == 1:
+            else:
                 string_to_print += (f"Detected a spot!\n")
                 (lat, lon) = self.meters_offset_to_gps(offset_y, offset_x)
                 string_to_print += (f"Found here! {(lat, lon)} {label} \n") 
@@ -602,9 +529,8 @@ class Drone(vc.Vehicle):
                         #turn to radians 
                         angle_to_target_rad = math.radians(angle_to_target_deg)
                         #based on current yaw grab this
-                        desired_yaw = float(self.yaw + math.pi + angle_to_target_rad) % (2 * math.pi)
-                        self.FC = True
-                        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop) 
+                        desired_yaw = float(self.yaw + math.pi + angle_to_target_rad) % (2 * math.pi)                        
+                        time.sleep((0.01)) 
                         self.yaw_mv(yaw=desired_yaw)
                 if self.dict_gps[label] == (0.0, 0.0):                    
                     self.dict_gps[label] = (lat, lon)   
@@ -629,7 +555,7 @@ class Drone(vc.Vehicle):
                 f"FPS: {avg_fps} | Inference Time: {avg_inference_time} ms | Avg Confidence: {avg_confidence}\n"
             )
         # Log FPS, inference time, and confidence score to CSV files  
-        a.run_coroutine_threadsafe(a.sleep(0.01), loop=self.loop)      
+        time.sleep((0.01))      
         if frame_count % 5 == 0:            
             print(string_to_print)
         

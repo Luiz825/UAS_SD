@@ -24,7 +24,10 @@ class Vehicle:
     def __init__(self, conn='udp:localhost:14551', t=5):
         self.GPS = Vector(0, 0, 0)
         self.NED = Vector(0, 0, 0)
-        self.VEL = Vector(0, 0, 0)                                
+        self.VEL = Vector(0, 0, 0)    
+        self.roll=0
+        self.pitch=0    
+        self.yaw = 0                             
         self.battery=100
         self.ze_connection=mavutil.mavlink_connection(conn, baud = 57600)        
         self.conn_qual = 0 # the lower the better meaning no packets lost 
@@ -110,7 +113,6 @@ class Vehicle:
     def alt_diff(self):
         ## DETERMINE IF THE CURRENT VELOCITY IS ENOUGH TO REACH WAYPOINT ALTITUDE ##
         time.sleep(0.1)
-
     
     async def check_telem(self):    
         ## CHECK THE TELEMETRY DATA ##
@@ -144,8 +146,7 @@ class Vehicle:
     ## RAPS BERRY PI 5 DOES NOOOOOOOOOOOT SUPPORT PIGPIO ## 
         if time_out_sess is None:
             try:
-                msg = self.ze_connection.recv_match(type = str_type, blocking = block)
-                a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)                    
+                msg = self.ze_connection.recv_match(type = str_type, blocking = block)                                  
                 return None, msg
             except Exception as e:
                 return None, None
@@ -167,24 +168,11 @@ class Vehicle:
             print(f"No message {str_type}")
             return time_out_sess, None # when it took entire time to retrieve message and no message was retrieved      
 
-    async def update_NED(self):
-        ## HOLD UNTIL POS REACHED ##   
-        while self.active:        
-            rel = 'LOCAL_POSITION_NED'         
-            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
-            if msg:
-                self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
-            else:
-                continue
-            print(f"Current Position: x = {self.NED.x:.2f} m, y = {self.NED.y:.2f} m, z = {self.NED.z:.2f} m")                
-            await a.sleep(0.1)
-        
-    async def update_GPS(self):
-        ## HOLD UNTIL POS REACHED ##     
+    def update_specs(self):
         while self.active:            
             rel = 'GLOBAL_POSITION_INT'        
             # Wait for initial position
-            t, msg = await a.to_thread(self.wait_4_msg, str_type=rel)
+            t, msg = self.wait_4_msg(str_type=rel)
             if msg:
                 self.GPS.x = msg.lat / 1e7
                 self.GPS.y = msg.lon / 1e7
@@ -192,22 +180,45 @@ class Vehicle:
             else:
                 continue
             print(f"Current Coordinate: lat = {self.GPS.x:.2f} m, lon = {self.GPS.y:.2f} m, alt = {self.GPS.z:.2f} m")    
-            await a.sleep(0.1)
+            time.sleep(0.1)
 
-    async def change_mode(self):
+            rel = 'LOCAL_POSITION_NED'         
+            t, msg = self.wait_4_msg(str_type=rel)
+            if msg:
+                self.NED.x, self.NED.y, self.NED.z = msg.x, msg.y, msg.z        
+            else:
+                continue
+            print(f"Current Position: x = {self.NED.x:.2f} m, y = {self.NED.y:.2f} m, z = {self.NED.z:.2f} m")                
+            time.sleep(0.1)
+            ## HOLD UNTIL POS REACHED ##  
+            time.sleep(0.1)   
+
+            rel = 'ATTITUDE'         
+            t, msg = self.wait_4_msg(str_type=rel)
+            if msg:
+                self.roll = msg.roll * 100 / math.pi
+                self.pitch = msg.pitch * 100 / math.pi
+                self.yaw = msg.yaw
+            else:
+                continue
+            print(f"Current Orientation: roll = {self.roll:.2f} m, pitch = {self.pitch:.2f} m") 
+
+    def change_mode(self):
         ## CHANGE THE MODE OF THE DRONE ##
         mode = self.mode
+        set_FC = False
+        set_GCS = False
         while self.active:
-            t, msg_hb = await a.to_thread(self.wait_4_msg, str_type='HEARTBEAT')
+            t, msg_hb = self.wait_4_msg(str_type='HEARTBEAT')
             hb_mode = None
             modes = {v: k for k, v in self.ze_connection.mode_mapping().items()}
             if msg_hb:
                 print(msg_hb)
                 hb_mode = msg_hb.custom_mode
             else: 
-                await a.sleep(0.1)
+                time.sleep(0.01)
                 continue
-            await a.sleep(0.1)
+            time.sleep(0.01)
             if mode != self.mode:
                 self.mode_activate(self.mode)                
             elif (hb_mode not in modes and hb_mode != self.mode):
@@ -215,9 +226,52 @@ class Vehicle:
             mode = self.mode      
             if mode == 'RTL' or mode == 'LAND':
                 self.active = False
-                await a.sleep(0.1)
+                time.sleep(0.01)
             print(f"Current mode: {self.mode}")
-            await a.sleep(0.1) 
+        
+            time.sleep(0.01)
+            if self.FC and not set_FC:
+                self.ze_connection.mav.command_long_send(
+                            self.ze_connection.target_system,
+                            self.ze_connection.target_component,
+                            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                            0,
+                            0, 0, 0, 0, 0, 0, 0  # param1=0 pauses mission
+                        ) 
+                t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block=True)
+                print(msg)                
+                ## MAV_CMD_NAV_GUIDED_ENABLE 
+                self.ze_connection.mav.command_long_send(
+                            self.ze_connection.target_system, 
+                            self.ze_connection.target_component, 
+                            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
+                            0, 1, 0, 0, 0, 0, 0, 0)    
+                t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block=True)
+                print(msg)
+                self.mode = 'GUIDED'                 
+                set_FC = True
+                set_GCS = False
+
+            elif not self.FC and not set_GCS:
+                self.ze_connection.mav.command_long_send(
+                            self.ze_connection.target_system,
+                            self.ze_connection.target_component,
+                            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                            1,
+                            1, 0, 0, 0, 0, 0, 0  # param1=1 resumes mission
+                        ) 
+                t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block=True)
+                print(msg)            
+                ## MAV_CMD_NAV_GUIDED_ENABLE 
+                self.ze_connection.mav.command_long_send(
+                            self.ze_connection.target_system, 
+                            self.ze_connection.target_component, 
+                            mavutil.mavlink.MAV_CMD_NAV_GUIDED_ENABLE, 
+                            0, 0, 0, 0, 0, 0, 0, 0)    
+                t, msg = self.wait_4_msg(str_type='COMMAND_ACK', block=True)
+                print(msg)                     
+                set_GCS = True
+                set_FC = False
 
     def mode_activate(self, mode_e: VALID_MODES):
         ## CAHNGE THE MODE BASED ON POSSIBLE INPUTS ##
@@ -226,14 +280,14 @@ class Vehicle:
         # Send mode change request
         self.ze_connection.set_mode(mode_id)
         print(f"Mode changed to {mode_e}!") 
-        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+        time.sleep(1) 
 
-    def set_wrist(self, arm_disarm):
+    async def set_wrist(self, arm_disarm):
         ## SET THE DRONE TO ARMED OR DISARMED ##
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system, 
             self.ze_connection.target_component, 
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
             0, arm_disarm, 0, 0, 0, 0, 0, 0)        
-        print(self.wait_4_msg(str_type='COMMAND_ACK', block = True)) 
-        a.run_coroutine_threadsafe(a.sleep(0.1), loop=self.loop)    
+        print(a.to_thread(self.wait_4_msg(str_type='COMMAND_ACK', block = True)))
+        a.sleep(0.01)  
