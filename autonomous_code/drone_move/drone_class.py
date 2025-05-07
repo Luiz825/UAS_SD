@@ -168,20 +168,20 @@ class Drone(vc.Vehicle):
                 file.flush()
                 await a.sleep(3)
     
-    def payload_sequence(self, inst=8):
+    async def payload_sequence(self, inst=8):
         ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
-
+        print("DROP")
         while self.active:
             if self.mode == 'MANUAL':
-                time.sleep((0.1))    
+                await a.sleep((0.1))    
                 continue  
             if self.drop:
-                self.move_servo(inst, 850)
-                time.sleep(0.01)
-                self.move_servo(inst, 1550)
-                time.sleep(0.01)
+                await self.move_servo(inst, 850)
+                await a.sleep(0.01)
+                await self.move_servo(inst, 1550)
+                await a.sleep(0.01)
                 self.drop = False
-            time.sleep((0.1))    
+            await a.sleep((0.1))    
 
     async def crash_check(self, tol = 0.5):
         ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND ##
@@ -300,7 +300,6 @@ class Drone(vc.Vehicle):
             await a.sleep(0.1)
         self.mode = 'STABILIZE'
         await a.to_thread(self.set_wrist(0))                
-
         
     def to_infinity_and_beyond(self, h=0.25, yaw = 0):   
         ## TAKE OFF AND REACH AN ALTITUDE FOR GUIDED MODE/WHEN STARTING FOR  ##  
@@ -314,7 +313,7 @@ class Drone(vc.Vehicle):
             0, 0, 0, 0, float(self.yaw), 0, 0, h)    
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))          
 
-    def move_servo(self, inst=8, pwm=1500):
+    async def move_servo(self, inst=8, pwm=1500):
         ## MOVE THE MOTOR AT INST A VAL OF PWM ##
         self.ze_connection.mav.command_long_send(
             target_system=self.ze_connection.target_system,
@@ -502,10 +501,9 @@ class Drone(vc.Vehicle):
                 
                 if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye):
                     string_to_print += (f"Dropping payload!\n")
-                    self.payload_sequence()
+                    self.drop = True
                     time.sleep((0.01)) 
                     self.vel_or_waypoint_mv(z=5)  
-
                     while abs(self.VEL.z) > 5 and not self.demo:
                         time.sleep((0.01)) 
                         continue        
