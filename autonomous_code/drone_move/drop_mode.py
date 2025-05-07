@@ -47,6 +47,16 @@ if __name__ == '__main__':
         specs_thread = threading.Thread(target=drone.update_specs)
         async_thread = threading.Thread(target=main, args=drone)
 
+        camera_thread.start()
+        mode_thread.start()
+        specs_thread.start()
+        async_thread.start()
+
+        camera_thread.join()
+        mode_thread.join()
+        specs_thread.join()
+        async_thread.join()
+
         sys.stdout = original_stdout  # Restore stdout
         print(f"done or did nt work lol")
                 
