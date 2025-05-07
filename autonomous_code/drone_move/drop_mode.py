@@ -8,6 +8,8 @@ import threading
 conn = '/dev/ttyUSB0' # keep permenant! not changeable! while using uart mod with GND
 # the default'udp:localhost:14551 keep for simulations! 
 # need to add to sim inputs when simming with 'output add 127.0.0.1:14551' command
+def run_main(drone):
+    asyncio.run(main(drone))
 
 def main(drone):
     loop = asyncio.get_event_loop()    
@@ -16,6 +18,8 @@ def main(drone):
             drone.check_telem(),
             drone.crash_check(),            
             drone.land_question(),
+            asyncio.to_thread(drone.change_mode),
+            asyncio.to_thread(drone.update_specs)
         ))    
     finally:
         loop.close()
@@ -42,19 +46,11 @@ if __name__ == '__main__':
         drone = dc.Drone(conn, 10, 1)
         print(f"{drone.wait_4_msg('HEARTBEAT', block=True)}")      
 
-        camera_thread = threading.Thread(target=drone.cam_start)
-        mode_thread = threading.Thread(target=drone.change_mode)
-        specs_thread = threading.Thread(target=drone.update_specs)
-        async_thread = threading.Thread(target=main, args=drone)
-
-        camera_thread.start()
-        mode_thread.start()
-        specs_thread.start()
+        async_thread = threading.Thread(target=run_main, args=drone)
+        
         async_thread.start()
+        drone.cam_start()
 
-        camera_thread.join()
-        mode_thread.join()
-        specs_thread.join()
         async_thread.join()
 
         sys.stdout = original_stdout  # Restore stdout
