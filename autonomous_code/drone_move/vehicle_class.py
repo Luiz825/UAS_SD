@@ -8,7 +8,6 @@ import math
 import builtins
 import functools
 
-print = functools.partial(builtins.print, flush=True)
 
 @dataclass
 class Vector:
@@ -38,6 +37,8 @@ class Vehicle:
         self.mission = False
         self.waypoint_0 = (0, 0, 0, 0) #(frame, x, y, z)
         self.t_sess = t     
+
+        print = functools.partial(builtins.print, flush=True)
 
     async def track_mission_target(self):
        ##TRACK LOCATION OF DRONE AND WHERE IN SPACE TIME IT IS##

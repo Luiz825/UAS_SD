@@ -47,7 +47,10 @@ class Drone(vc.Vehicle):
         self.fps_history = deque(maxlen=10)  # Store last 10 FPS values for smoothing
         self.inference_time_history = deque(maxlen=10)  # Store last 10 inference times
         self.confidence_score_history = deque(maxlen=10)  # Store last 10 confidence scores 
-        self.loop= a.get_event_loop()                  
+        self.loop= a.get_event_loop()                 
+
+        print = functools.partial(builtins.print, flush=True)
+
         # % is the % of packages lost                         
         self.ze_connection.mav.command_long_send(
             self.ze_connection.target_system,
