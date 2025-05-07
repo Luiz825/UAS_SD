@@ -18,7 +18,7 @@ def main(drone):
             drone.check_telem(),
             drone.crash_check(),            
             drone.land_question(),
-            drone.payload_sequence(),
+            # drone.payload_sequence(),
             asyncio.to_thread(drone.change_mode),
             asyncio.to_thread(drone.update_specs)
         ))    

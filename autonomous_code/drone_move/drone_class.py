@@ -168,20 +168,20 @@ class Drone(vc.Vehicle):
                 file.flush()
                 await a.sleep(3)
     
-    async def payload_sequence(self, inst=8):
-        ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
-        print("DROP")
-        while self.active:
-            if self.mode == 'MANUAL':
-                await a.sleep((0.1))    
-                continue  
-            if self.drop:
-                await self.move_servo(inst, 850)
-                await a.sleep(0.01)
-                await self.move_servo(inst, 1550)
-                await a.sleep(0.01)
-                self.drop = False
-            await a.sleep((0.1))    
+    # async def payload_sequence(self, inst=8):
+    #     ## SPECIFIC SEQUENCE OF VALUES FOR PAYLOAD DROP ##
+    #     print(f"DROPPED")
+    #     while self.active:
+    #         if self.mode == 'MANUAL':
+    #             await a.sleep((0.1))    
+    #             continue  
+    #         if self.drop:
+    #             await self.move_servo(inst, 850)
+    #             await a.sleep(0.01)
+    #             await self.move_servo(inst, 1550)
+    #             await a.sleep(0.01)
+    #             self.drop = False
+    #         await a.sleep((0.1))    
 
     async def crash_check(self, tol = 0.5):
         ## IF THE DRONE SHIFTS EXTREME TO ANGLE GRATER 100D THEN STOP TO LAND ##
@@ -313,7 +313,7 @@ class Drone(vc.Vehicle):
             0, 0, 0, 0, float(self.yaw), 0, 0, h)    
         print(self.wait_4_msg(str_type="COMMAND_ACK", block = True))          
 
-    async def move_servo(self, inst=8, pwm=1500):
+    def move_servo(self, inst=8, pwm=1500):
         ## MOVE THE MOTOR AT INST A VAL OF PWM ##
         self.ze_connection.mav.command_long_send(
             target_system=self.ze_connection.target_system,
@@ -501,7 +501,10 @@ class Drone(vc.Vehicle):
                 
                 if (centered_y and centered_x and abs(self.NED.z) <= 600 and bullseye) or self.demo:
                     print(f"Dropping payload!\n")
-                    self.drop = True
+                    self.move_servo(inst=8, pwm=850)
+                    time.sleep(0.01)
+                    self.move_servo(inst=8, pwm=1550)
+                    time.sleep(0.01)
                     time.sleep((0.01)) 
                     self.vel_or_waypoint_mv(z=5)  
                     while abs(self.VEL.z) > 5 and not self.demo:
